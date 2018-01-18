@@ -1,0 +1,414 @@
+//--------------------------------------
+//--- 010 Editor v5.0.2 Binary Template
+//
+// File: AndroidManifest.bt
+// Author: feicong
+// E-mail: fei_cong@hotmail.com
+// Wechat: feicongcn
+// Version: 1.0
+// Purpose: Parse AndroidManifest.xml binary file in an Android APK package. defined all structures from frameworks/base/include/androidfw/ResourceTypes.h
+// Category: Operating System
+// File Mask: *.xml
+// ID Bytes: 03 00, 02 00
+// History:
+//   1.0   2017-03-11 feicong: Initial release.
+//--------------------------------------
+
+LittleEndian();
+
+typedef enum <ushort> {
+    RES_NULL_TYPE               = 0x0000,
+    RES_STRING_POOL_TYPE        = 0x0001,
+    RES_TABLE_TYPE              = 0x0002,
+    RES_XML_TYPE                = 0x0003,
+
+    // Chunk types in RES_XML_TYPE
+    RES_XML_FIRST_CHUNK_TYPE    = 0x0100,
+    RES_XML_START_NAMESPACE_TYPE= 0x0100,
+    RES_XML_END_NAMESPACE_TYPE  = 0x0101,
+    RES_XML_START_ELEMENT_TYPE  = 0x0102,
+    RES_XML_END_ELEMENT_TYPE    = 0x0103,
+    RES_XML_CDATA_TYPE          = 0x0104,
+    RES_XML_LAST_CHUNK_TYPE     = 0x017f,
+    // This contains a uint32_t array mapping strings in the string
+    // pool back to resource identifiers.  It is optional.
+    RES_XML_RESOURCE_MAP_TYPE   = 0x0180,
+
+    // Chunk types in RES_TABLE_TYPE
+    RES_TABLE_PACKAGE_TYPE      = 0x0200,
+    RES_TABLE_TYPE_TYPE         = 0x0201,
+    RES_TABLE_TYPE_SPEC_TYPE    = 0x0202
+} RES_TYPE;
+
+// DimemsionTable[8] = {"px", "dip", "sp", "pt", "in", "mm", "", ""};
+typedef enum <uint> {
+    px = 0,
+    dip,
+    sp,
+    pt,
+    in,
+    mm
+} AXML_DIMENSION;
+
+local float RadixTable[8] = {0.00390625f, 3.051758E-005f, 1.192093E-007f, 4.656613E-010f};
+
+typedef enum<uint> {
+    TYPE_NULL = 0x00,
+    TYPE_REFERENCE = 0x01,
+    TYPE_ATTRIBUTE = 0x02,
+    TYPE_STRING = 0x03,
+    TYPE_FLOAT = 0x04,
+    TYPE_DIMENSION = 0x05,
+    TYPE_FRACTION = 0x06,
+    TYPE_DYNAMIC_REFERENCE = 0x07,
+    TYPE_DYNAMIC_ATTRIBUTE = 0x08,
+    TYPE_FIRST_INT = 0x10,
+    TYPE_INT_DEC = 0x10,
+    TYPE_INT_HEX = 0x11,
+    TYPE_INT_BOOLEAN = 0x12,
+    TYPE_FIRST_COLOR_INT = 0x1c,
+    TYPE_INT_COLOR_ARGB8 = 0x1c,
+    TYPE_INT_COLOR_RGB8 = 0x1d,
+    TYPE_INT_COLOR_ARGB4 = 0x1e,
+    TYPE_INT_COLOR_RGB4 = 0x1f,
+    TYPE_LAST_COLOR_INT = 0x1f,
+    TYPE_LAST_INT = 0x1f
+} ATTR_TYPE;
+
+typedef struct {
+    ushort type <format=hex, read=AxmlTypeString, comment="Chunk Type">;
+    ushort headerSize;
+    int size;
+} ResChunk_header;
+
+typedef struct {
+    uchar len;
+    uchar enc_len;
+    if (len > 0) {
+        char data[len];
+    }
+} axml_string8;
+
+typedef struct {
+    ushort len;
+    if (len > 0) {
+        wchar_t data[len];
+    }
+} axml_string16;
+
+typedef struct {
+    uint index <format=hex>;
+
+    if (index != 0xFFFFFFFF) {
+        local int64 pos = FTell();
+        local int off = sizeof(file.header) + file.strings.header.stringsStart + index;
+        FSeek(off);
+        local int flags = file.strings.header.flags;
+        local int isUtf8 = flags & (1<<8);
+        if (isUtf8)
+            axml_string8 astr;
+        else
+            axml_string16 astr;
+
+        FSeek(pos);
+    }
+
+} ResStringPool_string <read=AxmlStringRead, optimize=false>;
+
+typedef struct {
+    uint index;
+} ResStringPool_ref;
+
+string AxmlStringRead(ResStringPool_string &poolstring) {
+    if (poolstring.index == 0xFFFFFFFF) {
+        return "";
+    } else {
+        return poolstring.astr.data;
+    }
+}
+
+typedef struct {
+    ResChunk_header header;
+    uint stringCount;
+    uint styleCount;
+    uint flags;
+    uint stringsStart  <format=hex>;
+    uint stylesStart;
+} ResStringPool_header;
+
+typedef struct {
+    ResStringPool_header header;
+    if (header.stringCount > 0) {
+        ResStringPool_string data[header.stringCount] <comment="String item">;
+    }
+
+    if (header.styleCount > 0) {
+        uint style_offsets[header.styleCount];
+        off = header.stylesStart - header.stringsStart;
+    } else {
+        off = header.header.size - header.stringsStart;
+    }
+
+    FSkip(off);
+} ResStringPool;
+
+typedef struct {
+    ResChunk_header header;
+
+    local int count = (header.size-8) / 4;
+    uint ids[count] <format=hex>;
+} ResIDs;
+
+typedef struct {
+    ushort size;
+    uchar  res0;
+    uchar  dateType <read=AxmlAttrTypeRead>;
+    uint   data;
+} Res_value;
+
+string AxmlAttrTypeRead(uchar type) {
+    if (type == TYPE_NULL)
+        return EnumToString( TYPE_NULL );
+    else if (type == TYPE_REFERENCE)
+        return EnumToString( TYPE_REFERENCE );
+    else if (type == TYPE_ATTRIBUTE)
+        return EnumToString( TYPE_ATTRIBUTE );
+    else if (type == TYPE_STRING)
+        return EnumToString( TYPE_STRING );
+    else if (type == TYPE_FLOAT)
+        return EnumToString( TYPE_FLOAT );
+    else if (type == TYPE_DIMENSION)
+        return EnumToString( TYPE_DIMENSION );
+    else if (type == TYPE_FRACTION)
+        return EnumToString( TYPE_FRACTION );
+    else if (type == TYPE_INT_DEC)
+        return EnumToString( TYPE_INT_DEC );
+    else if (type == TYPE_INT_HEX)
+        return EnumToString( TYPE_INT_HEX );
+    else if (type == TYPE_INT_BOOLEAN)
+        return EnumToString( TYPE_INT_BOOLEAN );
+    else if (type == TYPE_INT_COLOR_ARGB8)
+        return EnumToString( TYPE_INT_COLOR_ARGB8 );
+    else if (type == TYPE_INT_COLOR_RGB8)
+        return EnumToString( TYPE_INT_COLOR_RGB8 );
+    else if (type == TYPE_INT_COLOR_ARGB4)
+        return EnumToString( TYPE_INT_COLOR_ARGB4 );
+    else if (type == TYPE_INT_COLOR_RGB4)
+        return EnumToString( TYPE_INT_COLOR_RGB4 );
+    else if (type >= TYPE_FIRST_COLOR_INT && type <= TYPE_LAST_COLOR_INT4)
+        return "ATTR_COLOR";
+    else if (type >= TYPE_FIRST_INT && type <= TYPE_LAST_INT)
+        return "ATTR_INT";
+    else
+        return "ATTR_UNKNOW";
+}
+
+typedef struct {
+    ResStringPool_ref prefix <read=AxmlStringByRefIndex>;
+    ResStringPool_ref uri <read=AxmlStringByRefIndex>;
+} ResXMLTree_namespaceExt;
+
+typedef struct {
+    ResStringPool_ref ns <read=AxmlStringByRefIndex>;
+    ResStringPool_ref name <read=AxmlStringByRefIndex>;
+    ResStringPool_ref rawValue;
+    Res_value typedValue;
+} ResXMLTree_attribute;
+
+typedef struct {
+    ResStringPool_ref ns <read=AxmlStringByRefIndex>;
+    ResStringPool_ref name <read=AxmlStringByRefIndex>;
+    ushort attributeStart;
+    ushort attributeSize;
+    ushort attributeCount;
+    ushort idIndex;
+    ushort classIndex;
+    ushort styleIndex;
+    local int total = attributeCount;
+    while (total > 0) {
+        total -= 1;
+        ResXMLTree_attribute attr <read=AxmlAttrRead, comment="attr item">;
+    }
+} ResXMLTree_attrExt;
+
+string AxmlAttrRead(ResXMLTree_attribute &attr) {
+    local uchar type = attr.typedValue.dateType;
+    string name = AxmlStringById(attr.name.index);
+    string buf = "Unknow";
+    //Printf("attr name:%s\n", name);
+
+    if (type == TYPE_STRING) {
+        local string val = AxmlStringById(attr.rawValue.index);
+        SPrintf(buf, "%s=%s", name, val);
+    } else if (type == TYPE_NULL) {
+        SPrintf(buf, "%s=NULL", name);
+    } else if (type == TYPE_REFERENCE) {
+        if (attr.rawValue.data>>24 == 1) {
+            SPrintf(buf, "%s=@android:%08X", name, attr.typedValue.data);
+        } else {
+            SPrintf(buf, "%s=@%08X", name, attr.typedValue.data);
+        }
+    } else if (type == TYPE_ATTRIBUTE) {
+        if (attr.rawValue.data>>24 == 1) {
+            SPrintf(buf, "%s=?android:%08X", name, attr.typedValue.data);
+        } else {
+            SPrintf(buf, "%s=?%08X", name, attr.typedValue.data);
+        }
+    } else if (type == TYPE_FLOAT) {
+        SPrintf(buf, "%s=%g", name, (float)attr.typedValue.data);
+    } else if (type == TYPE_DIMENSION) {
+        SPrintf(buf, "%s=%f%s", name,
+				(float)(attr.rawValue.data & 0xffffff00) * RadixTable[(attr.rawValue.data >> 4) & 0x03],
+				DimemsionTable[attr.rawValue.data & 0x0f] );
+    } else if (type == TYPE_FRACTION) {
+        SPrintf(buf, "%s=%f%s", name,
+				(float)(attr.rawValue.data & 0xffffff00) * RadixTable[(attr.typedValue.data >> 4) & 0x03],
+				FractionTable[attr.typedValue.data & 0x0f] );
+    } else if (type == TYPE_INT_HEX) {
+        SPrintf(buf, "%s=0x%08x", name, attr.typedValue.data);
+    } else if (type == TYPE_INT_BOOLEAN) {
+        if (attr.typedValue.data == 0) {
+            SPrintf(buf, "%s=false", name);
+        } else {
+            SPrintf(buf, "%s=true", name);
+        }
+    } else if (type >= TYPE_FIRST_COLOR_INT && type <= TYPE_LAST_COLOR_INT) {
+        SPrintf(buf, "%s=#%08x", name, attr.typedValue.data);
+    } else if (type >= TYPE_FIRST_INT && type <= TYPE_LAST_INT) {
+        SPrintf(buf, "%s=%d", name, attr.typedValue.data);
+    } else {
+        SPrintf(buf, "%s=UNKNOW", name);
+    }
+
+    return buf;
+}
+
+typedef struct {
+    ResStringPool_ref ns <read=AxmlStringByRefIndex>;
+    ResStringPool_ref name <read=AxmlStringByRefIndex>;
+} ResXMLTree_endElementExt;
+
+typedef struct {
+    ResStringPool_ref data <read=AxmlStringByRefIndex>;
+    Res_value typedData;
+} ResXMLTree_cdataExt;
+
+typedef struct {
+    ResChunk_header header;
+    uint lineNumber;
+    ResStringPool_ref comment;
+} ResXMLTree_node;
+
+typedef struct {
+    ResXMLTree_node node;
+
+    local ushort type = node.header.type;
+    if (type == RES_XML_START_NAMESPACE_TYPE) {
+        ResXMLTree_namespaceExt nsExt;
+    } else if (type == RES_XML_START_ELEMENT_TYPE) {
+        ResXMLTree_attrExt attrExt;
+    } else if (type == RES_XML_END_ELEMENT_TYPE) {
+        ResXMLTree_endElementExt endElemExt;
+    } else if (type == RES_XML_CDATA_TYPE) {
+        ResXMLTree_cdataExt cdataExt;
+    } else if (type == RES_XML_END_NAMESPACE_TYPE) {
+        ResXMLTree_namespaceExt nsExt;
+    }
+} ResXMLElement <read=AxmlNodeRead, optimize=false>;
+
+string AxmlNodeRead(ResXMLElement &elem) {
+    string buf;
+    local ushort type = elem.node.header.type;
+    Printf("type:%d\n", type);
+    if (type == RES_XML_START_NAMESPACE_TYPE) {
+        SPrintf(buf, "<xmlns:%s>", AxmlStringById(elem.nsExt.prefix.index));
+    } else if (type == RES_XML_START_ELEMENT_TYPE) {
+        SPrintf(buf, "<%s>", AxmlStringById(elem.attrExt.name.index));
+    } else if (type == RES_XML_END_ELEMENT_TYPE) {
+        SPrintf(buf, "</%s>", AxmlStringById(elem.endElemExt.name.index));
+    } else if (type == RES_XML_CDATA_TYPE) {
+        SPrintf(buf, "<%s>", AxmlStringById(elem.cdataExt.data.index));
+    } else if (type == RES_XML_END_NAMESPACE_TYPE) {
+        SPrintf(buf, "</xmlns:%s>", AxmlStringById(elem.nsExt.prefix.index));
+    } else {
+        SPrintf(buf, "<error type:%d>", "type");
+    }
+
+    return buf;
+}
+
+string AxmlTypeString(ushort &type) {
+    if (type == RES_XML_TYPE)
+        return "RES_XML_TYPE";
+    else if (type == RES_STRING_POOL_TYPE)
+        return "RES_STRING_POOL_TYPE";
+    else if (type == RES_XML_RESOURCE_MAP_TYPE)
+        return "RES_XML_RESOURCE_MAP_TYPE";
+    else if (type == RES_XML_START_NAMESPACE_TYPE)
+        return "START_NAMESPACE";
+    else if (type == RES_XML_END_NAMESPACE_TYPE)
+        return "END_NAMESPACE";
+    else if (type == RES_XML_START_ELEMENT_TYPE)
+        return "START_TAG";
+    else if (type == RES_XML_END_ELEMENT_TYPE)
+        return "END_TAG";
+    else if (type == RES_XML_CDATA_TYPE)
+        return "TEXT";
+    else
+        return "TYPE_UNKNOW";
+}
+
+typedef struct {
+    total = 0;
+    do {
+        total += 1;
+        ResXMLElement elem;
+    } while (!FEof());
+} ResXMLTree;
+
+struct AXML {
+    local int off;
+    local int total;
+
+    ResChunk_header header;
+    ResStringPool strings <read=AxmlStringCountRead>;
+    ResIDs resourceids <read=AxmlResIDsRead>;
+
+    ResXMLTree tree;
+} file;
+
+string AxmlStringCountRead(ResStringPool &pool) {
+    string ret = "";
+    SPrintf(ret, "string count=%d", pool.header.stringCount);
+    return ret;
+}
+
+string AxmlResIDsRead(ResIDs &resids) {
+    string ret = "";
+    SPrintf(ret, "resid count=%d", (resids.header.size-8)/4);
+    return ret;
+}
+
+string AxmlStringByRefIndex(ResStringPool_ref &ref) {
+    if (ref.index == 0xFFFFFFFF) {
+        return "";
+    } else if (ref.index < file.strings.header.stringCount) {
+        return file.strings.data[ref.index].astr.data;
+    } else {
+        string ret = "";
+        SPrintf(ret, "Out off strings[%d] range %d", file.strings.header.stringCount, index);
+        return ret;
+    }
+}
+
+string AxmlStringById(uint &index) {
+    if (index == 0xFFFFFFFF) {
+        return "";
+    } else if (index < file.strings.header.stringCount) {
+        return file.strings.data[index].astr.data;
+    } else {
+        string ret = "";
+        SPrintf(ret, "Out off strings[%d] range %d", file.strings.header.stringCount, index);
+        return ret;
+    }
+}

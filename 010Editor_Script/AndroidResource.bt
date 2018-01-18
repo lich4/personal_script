@@ -1,0 +1,3005 @@
+//------------------------------------------------
+//--- 010 Editor v5.0.2 Binary Template
+//
+//      File: AndroidResource.bt
+//   Authors: lichao
+//	  E-mail: lichao.890427@163.com
+//   Version: 1.1
+//   Purpose: Parse AndroidManifest.xml, res/*.xml, and resource.arsc 
+//            binary files in an Android APK package.
+//  Category: Operating System
+// File Mask: *.xml,*.arsc
+//  ID Bytes: 03 00, 02 00
+//   History: 
+//   1.1   2017-03-13 feicong: add ResTable_entry & ResTable_map_entry.
+//   1.0   2016-07-11 lichao: Initial release.
+//------------------------------------------------
+
+typedef enum <uint>
+{
+	attr_theme=0x01010000,
+	attr_label=0x01010001,
+	attr_icon=0x01010002,
+	attr_name=0x01010003,
+	attr_manageSpaceActivity=0x01010004,
+	attr_allowClearUserData=0x01010005,
+	attr_permission=0x01010006,
+	attr_readPermission=0x01010007,
+	attr_writePermission=0x01010008,
+	attr_protectionLevel=0x01010009,
+	attr_permissionGroup=0x0101000a,
+	attr_sharedUserId=0x0101000b,
+	attr_hasCode=0x0101000c,
+	attr_persistent=0x0101000d,
+	attr_enabled=0x0101000e,
+	attr_debuggable=0x0101000f,
+	attr_exported=0x01010010,
+	attr_process=0x01010011,
+	attr_taskAffinity=0x01010012,
+	attr_multiprocess=0x01010013,
+	attr_finishOnTaskLaunch=0x01010014,
+	attr_clearTaskOnLaunch=0x01010015,
+	attr_stateNotNeeded=0x01010016,
+	attr_excludeFromRecents=0x01010017,
+	attr_authorities=0x01010018,
+	attr_syncable=0x01010019,
+	attr_initOrder=0x0101001a,
+	attr_grantUriPermissions=0x0101001b,
+	attr_priority=0x0101001c,
+	attr_launchMode=0x0101001d,
+	attr_screenOrientation=0x0101001e,
+	attr_configChanges=0x0101001f,
+	attr_description=0x01010020,
+	attr_targetPackage=0x01010021,
+	attr_handleProfiling=0x01010022,
+	attr_functionalTest=0x01010023,
+	attr_value=0x01010024,
+	attr_resource=0x01010025,
+	attr_mimeType=0x01010026,
+	attr_scheme=0x01010027,
+	attr_host=0x01010028,
+	attr_port=0x01010029,
+	attr_path=0x0101002a,
+	attr_pathPrefix=0x0101002b,
+	attr_pathPattern=0x0101002c,
+	attr_action=0x0101002d,
+	attr_data=0x0101002e,
+	attr_targetClass=0x0101002f,
+	attr_colorForeground=0x01010030,
+	attr_colorBackground=0x01010031,
+	attr_backgroundDimAmount=0x01010032,
+	attr_disabledAlpha=0x01010033,
+	attr_textAppearance=0x01010034,
+	attr_textAppearanceInverse=0x01010035,
+	attr_textColorPrimary=0x01010036,
+	attr_textColorPrimaryDisableOnly=0x01010037,
+	attr_textColorSecondary=0x01010038,
+	attr_textColorPrimaryInverse=0x01010039,
+	attr_textColorSecondaryInverse=0x0101003a,
+	attr_textColorPrimaryNoDisable=0x0101003b,
+	attr_textColorSecondaryNoDisable=0x0101003c,
+	attr_textColorPrimaryInverseNoDisable=0x0101003d,
+	attr_textColorSecondaryInverseNoDisable=0x0101003e,
+	attr_textColorHintInverse=0x0101003f,
+	attr_textAppearanceLarge=0x01010040,
+	attr_textAppearanceMedium=0x01010041,
+	attr_textAppearanceSmall=0x01010042,
+	attr_textAppearanceLargeInverse=0x01010043,
+	attr_textAppearanceMediumInverse=0x01010044,
+	attr_textAppearanceSmallInverse=0x01010045,
+	attr_textCheckMark=0x01010046,
+	attr_textCheckMarkInverse=0x01010047,
+	attr_buttonStyle=0x01010048,
+	attr_buttonStyleSmall=0x01010049,
+	attr_buttonStyleInset=0x0101004a,
+	attr_buttonStyleToggle=0x0101004b,
+	attr_galleryItemBackground=0x0101004c,
+	attr_listPreferredItemHeight=0x0101004d,
+	attr_expandableListPreferredItemPaddingLeft=0x0101004e,
+	attr_expandableListPreferredChildPaddingLeft=0x0101004f,
+	attr_expandableListPreferredItemIndicatorLeft=0x01010050,
+	attr_expandableListPreferredItemIndicatorRight=0x01010051,
+	attr_expandableListPreferredChildIndicatorLeft=0x01010052,
+	attr_expandableListPreferredChildIndicatorRight=0x01010053,
+	attr_windowBackground=0x01010054,
+	attr_windowFrame=0x01010055,
+	attr_windowNoTitle=0x01010056,
+	attr_windowIsFloating=0x01010057,
+	attr_windowIsTranslucent=0x01010058,
+	attr_windowContentOverlay=0x01010059,
+	attr_windowTitleSize=0x0101005a,
+	attr_windowTitleStyle=0x0101005b,
+	attr_windowTitleBackgroundStyle=0x0101005c,
+	attr_alertDialogStyle=0x0101005d,
+	attr_panelBackground=0x0101005e,
+	attr_panelFullBackground=0x0101005f,
+	attr_panelColorForeground=0x01010060,
+	attr_panelColorBackground=0x01010061,
+	attr_panelTextAppearance=0x01010062,
+	attr_scrollbarSize=0x01010063,
+	attr_scrollbarThumbHorizontal=0x01010064,
+	attr_scrollbarThumbVertical=0x01010065,
+	attr_scrollbarTrackHorizontal=0x01010066,
+	attr_scrollbarTrackVertical=0x01010067,
+	attr_scrollbarAlwaysDrawHorizontalTrack=0x01010068,
+	attr_scrollbarAlwaysDrawVerticalTrack=0x01010069,
+	attr_absListViewStyle=0x0101006a,
+	attr_autoCompleteTextViewStyle=0x0101006b,
+	attr_checkboxStyle=0x0101006c,
+	attr_dropDownListViewStyle=0x0101006d,
+	attr_editTextStyle=0x0101006e,
+	attr_expandableListViewStyle=0x0101006f,
+	attr_galleryStyle=0x01010070,
+	attr_gridViewStyle=0x01010071,
+	attr_imageButtonStyle=0x01010072,
+	attr_imageWellStyle=0x01010073,
+	attr_listViewStyle=0x01010074,
+	attr_listViewWhiteStyle=0x01010075,
+	attr_popupWindowStyle=0x01010076,
+	attr_progressBarStyle=0x01010077,
+	attr_progressBarStyleHorizontal=0x01010078,
+	attr_progressBarStyleSmall=0x01010079,
+	attr_progressBarStyleLarge=0x0101007a,
+	attr_seekBarStyle=0x0101007b,
+	attr_ratingBarStyle=0x0101007c,
+	attr_ratingBarStyleSmall=0x0101007d,
+	attr_radioButtonStyle=0x0101007e,
+	attr_scrollbarStyle=0x0101007f,
+	attr_scrollViewStyle=0x01010080,
+	attr_spinnerStyle=0x01010081,
+	attr_starStyle=0x01010082,
+	attr_tabWidgetStyle=0x01010083,
+	attr_textViewStyle=0x01010084,
+	attr_webViewStyle=0x01010085,
+	attr_dropDownItemStyle=0x01010086,
+	attr_spinnerDropDownItemStyle=0x01010087,
+	attr_dropDownHintAppearance=0x01010088,
+	attr_spinnerItemStyle=0x01010089,
+	attr_mapViewStyle=0x0101008a,
+	attr_preferenceScreenStyle=0x0101008b,
+	attr_preferenceCategoryStyle=0x0101008c,
+	attr_preferenceInformationStyle=0x0101008d,
+	attr_preferenceStyle=0x0101008e,
+	attr_checkBoxPreferenceStyle=0x0101008f,
+	attr_yesNoPreferenceStyle=0x01010090,
+	attr_dialogPreferenceStyle=0x01010091,
+	attr_editTextPreferenceStyle=0x01010092,
+	attr_ringtonePreferenceStyle=0x01010093,
+	attr_preferenceLayoutChild=0x01010094,
+	attr_textSize=0x01010095,
+	attr_typeface=0x01010096,
+	attr_textStyle=0x01010097,
+	attr_textColor=0x01010098,
+	attr_textColorHighlight=0x01010099,
+	attr_textColorHint=0x0101009a,
+	attr_textColorLink=0x0101009b,
+	attr_state_focused=0x0101009c,
+	attr_state_window_focused=0x0101009d,
+	attr_state_enabled=0x0101009e,
+	attr_state_checkable=0x0101009f,
+	attr_state_checked=0x010100a0,
+	attr_state_selected=0x010100a1,
+	attr_state_active=0x010100a2,
+	attr_state_single=0x010100a3,
+	attr_state_first=0x010100a4,
+	attr_state_middle=0x010100a5,
+	attr_state_last=0x010100a6,
+	attr_state_pressed=0x010100a7,
+	attr_state_expanded=0x010100a8,
+	attr_state_empty=0x010100a9,
+	attr_state_above_anchor=0x010100aa,
+	attr_ellipsize=0x010100ab,
+	attr_x=0x010100ac,
+	attr_y=0x010100ad,
+	attr_windowAnimationStyle=0x010100ae,
+	attr_gravity=0x010100af,
+	attr_autoLink=0x010100b0,
+	attr_linksClickable=0x010100b1,
+	attr_entries=0x010100b2,
+	attr_layout_gravity=0x010100b3,
+	attr_windowEnterAnimation=0x010100b4,
+	attr_windowExitAnimation=0x010100b5,
+	attr_windowShowAnimation=0x010100b6,
+	attr_windowHideAnimation=0x010100b7,
+	attr_activityOpenEnterAnimation=0x010100b8,
+	attr_activityOpenExitAnimation=0x010100b9,
+	attr_activityCloseEnterAnimation=0x010100ba,
+	attr_activityCloseExitAnimation=0x010100bb,
+	attr_taskOpenEnterAnimation=0x010100bc,
+	attr_taskOpenExitAnimation=0x010100bd,
+	attr_taskCloseEnterAnimation=0x010100be,
+	attr_taskCloseExitAnimation=0x010100bf,
+	attr_taskToFrontEnterAnimation=0x010100c0,
+	attr_taskToFrontExitAnimation=0x010100c1,
+	attr_taskToBackEnterAnimation=0x010100c2,
+	attr_taskToBackExitAnimation=0x010100c3,
+	attr_orientation=0x010100c4,
+	attr_keycode=0x010100c5,
+	attr_fullDark=0x010100c6,
+	attr_topDark=0x010100c7,
+	attr_centerDark=0x010100c8,
+	attr_bottomDark=0x010100c9,
+	attr_fullBright=0x010100ca,
+	attr_topBright=0x010100cb,
+	attr_centerBright=0x010100cc,
+	attr_bottomBright=0x010100cd,
+	attr_bottomMedium=0x010100ce,
+	attr_centerMedium=0x010100cf,
+	attr_id=0x010100d0,
+	attr_tag=0x010100d1,
+	attr_scrollX=0x010100d2,
+	attr_scrollY=0x010100d3,
+	attr_background=0x010100d4,
+	attr_padding=0x010100d5,
+	attr_paddingLeft=0x010100d6,
+	attr_paddingTop=0x010100d7,
+	attr_paddingRight=0x010100d8,
+	attr_paddingBottom=0x010100d9,
+	attr_focusable=0x010100da,
+	attr_focusableInTouchMode=0x010100db,
+	attr_visibility=0x010100dc,
+	attr_fitsSystemWindows=0x010100dd,
+	attr_scrollbars=0x010100de,
+	attr_fadingEdge=0x010100df,
+	attr_fadingEdgeLength=0x010100e0,
+	attr_nextFocusLeft=0x010100e1,
+	attr_nextFocusRight=0x010100e2,
+	attr_nextFocusUp=0x010100e3,
+	attr_nextFocusDown=0x010100e4,
+	attr_clickable=0x010100e5,
+	attr_longClickable=0x010100e6,
+	attr_saveEnabled=0x010100e7,
+	attr_drawingCacheQuality=0x010100e8,
+	attr_duplicateParentState=0x010100e9,
+	attr_clipChildren=0x010100ea,
+	attr_clipToPadding=0x010100eb,
+	attr_layoutAnimation=0x010100ec,
+	attr_animationCache=0x010100ed,
+	attr_persistentDrawingCache=0x010100ee,
+	attr_alwaysDrawnWithCache=0x010100ef,
+	attr_addStatesFromChildren=0x010100f0,
+	attr_descendantFocusability=0x010100f1,
+	attr_layout=0x010100f2,
+	attr_inflatedId=0x010100f3,
+	attr_layout_width=0x010100f4,
+	attr_layout_height=0x010100f5,
+	attr_layout_margin=0x010100f6,
+	attr_layout_marginLeft=0x010100f7,
+	attr_layout_marginTop=0x010100f8,
+	attr_layout_marginRight=0x010100f9,
+	attr_layout_marginBottom=0x010100fa,
+	attr_listSelector=0x010100fb,
+	attr_drawSelectorOnTop=0x010100fc,
+	attr_stackFromBottom=0x010100fd,
+	attr_scrollingCache=0x010100fe,
+	attr_textFilterEnabled=0x010100ff,
+	attr_transcriptMode=0x01010100,
+	attr_cacheColorHint=0x01010101,
+	attr_dial=0x01010102,
+	attr_hand_hour=0x01010103,
+	attr_hand_minute=0x01010104,
+	attr_format=0x01010105,
+	attr_checked=0x01010106,
+	attr_button=0x01010107,
+	attr_checkMark=0x01010108,
+	attr_foreground=0x01010109,
+	attr_measureAllChildren=0x0101010a,
+	attr_groupIndicator=0x0101010b,
+	attr_childIndicator=0x0101010c,
+	attr_indicatorLeft=0x0101010d,
+	attr_indicatorRight=0x0101010e,
+	attr_childIndicatorLeft=0x0101010f,
+	attr_childIndicatorRight=0x01010110,
+	attr_childDivider=0x01010111,
+	attr_animationDuration=0x01010112,
+	attr_spacing=0x01010113,
+	attr_horizontalSpacing=0x01010114,
+	attr_verticalSpacing=0x01010115,
+	attr_stretchMode=0x01010116,
+	attr_columnWidth=0x01010117,
+	attr_numColumns=0x01010118,
+	attr_src=0x01010119,
+	attr_antialias=0x0101011a,
+	attr_filter=0x0101011b,
+	attr_dither=0x0101011c,
+	attr_scaleType=0x0101011d,
+	attr_adjustViewBounds=0x0101011e,
+	attr_maxWidth=0x0101011f,
+	attr_maxHeight=0x01010120,
+	attr_tint=0x01010121,
+	attr_baselineAlignBottom=0x01010122,
+	attr_cropToPadding=0x01010123,
+	attr_textOn=0x01010124,
+	attr_textOff=0x01010125,
+	attr_baselineAligned=0x01010126,
+	attr_baselineAlignedChildIndex=0x01010127,
+	attr_weightSum=0x01010128,
+	attr_divider=0x01010129,
+	attr_dividerHeight=0x0101012a,
+	attr_choiceMode=0x0101012b,
+	attr_itemTextAppearance=0x0101012c,
+	attr_horizontalDivider=0x0101012d,
+	attr_verticalDivider=0x0101012e,
+	attr_headerBackground=0x0101012f,
+	attr_itemBackground=0x01010130,
+	attr_itemIconDisabledAlpha=0x01010131,
+	attr_rowHeight=0x01010132,
+	attr_maxRows=0x01010133,
+	attr_maxItemsPerRow=0x01010134,
+	attr_moreIcon=0x01010135,
+	attr_max=0x01010136,
+	attr_progress=0x01010137,
+	attr_secondaryProgress=0x01010138,
+	attr_indeterminate=0x01010139,
+	attr_indeterminateOnly=0x0101013a,
+	attr_indeterminateDrawable=0x0101013b,
+	attr_progressDrawable=0x0101013c,
+	attr_indeterminateDuration=0x0101013d,
+	attr_indeterminateBehavior=0x0101013e,
+	attr_minWidth=0x0101013f,
+	attr_minHeight=0x01010140,
+	attr_interpolator=0x01010141,
+	attr_thumb=0x01010142,
+	attr_thumbOffset=0x01010143,
+	attr_numStars=0x01010144,
+	attr_rating=0x01010145,
+	attr_stepSize=0x01010146,
+	attr_isIndicator=0x01010147,
+	attr_checkedButton=0x01010148,
+	attr_stretchColumns=0x01010149,
+	attr_shrinkColumns=0x0101014a,
+	attr_collapseColumns=0x0101014b,
+	attr_layout_column=0x0101014c,
+	attr_layout_span=0x0101014d,
+	attr_bufferType=0x0101014e,
+	attr_text=0x0101014f,
+	attr_hint=0x01010150,
+	attr_textScaleX=0x01010151,
+	attr_cursorVisible=0x01010152,
+	attr_maxLines=0x01010153,
+	attr_lines=0x01010154,
+	attr_height=0x01010155,
+	attr_minLines=0x01010156,
+	attr_maxEms=0x01010157,
+	attr_ems=0x01010158,
+	attr_width=0x01010159,
+	attr_minEms=0x0101015a,
+	attr_scrollHorizontally=0x0101015b,
+	attr_password=0x0101015c,
+	attr_singleLine=0x0101015d,
+	attr_selectAllOnFocus=0x0101015e,
+	attr_includeFontPadding=0x0101015f,
+	attr_maxLength=0x01010160,
+	attr_shadowColor=0x01010161,
+	attr_shadowDx=0x01010162,
+	attr_shadowDy=0x01010163,
+	attr_shadowRadius=0x01010164,
+	attr_numeric=0x01010165,
+	attr_digits=0x01010166,
+	attr_phoneNumber=0x01010167,
+	attr_inputMethod=0x01010168,
+	attr_capitalize=0x01010169,
+	attr_autoText=0x0101016a,
+	attr_editable=0x0101016b,
+	attr_freezesText=0x0101016c,
+	attr_drawableTop=0x0101016d,
+	attr_drawableBottom=0x0101016e,
+	attr_drawableLeft=0x0101016f,
+	attr_drawableRight=0x01010170,
+	attr_drawablePadding=0x01010171,
+	attr_completionHint=0x01010172,
+	attr_completionHintView=0x01010173,
+	attr_completionThreshold=0x01010174,
+	attr_dropDownSelector=0x01010175,
+	attr_popupBackground=0x01010176,
+	attr_inAnimation=0x01010177,
+	attr_outAnimation=0x01010178,
+	attr_flipInterval=0x01010179,
+	attr_fillViewport=0x0101017a,
+	attr_prompt=0x0101017b,
+	attr_startYear=0x0101017c,
+	attr_endYear=0x0101017d,
+	attr_mode=0x0101017e,
+	attr_layout_x=0x0101017f,
+	attr_layout_y=0x01010180,
+	attr_layout_weight=0x01010181,
+	attr_layout_toLeftOf=0x01010182,
+	attr_layout_toRightOf=0x01010183,
+	attr_layout_above=0x01010184,
+	attr_layout_below=0x01010185,
+	attr_layout_alignBaseline=0x01010186,
+	attr_layout_alignLeft=0x01010187,
+	attr_layout_alignTop=0x01010188,
+	attr_layout_alignRight=0x01010189,
+	attr_layout_alignBottom=0x0101018a,
+	attr_layout_alignParentLeft=0x0101018b,
+	attr_layout_alignParentTop=0x0101018c,
+	attr_layout_alignParentRight=0x0101018d,
+	attr_layout_alignParentBottom=0x0101018e,
+	attr_layout_centerInParent=0x0101018f,
+	attr_layout_centerHorizontal=0x01010190,
+	attr_layout_centerVertical=0x01010191,
+	attr_layout_alignWithParentIfMissing=0x01010192,
+	attr_layout_scale=0x01010193,
+	attr_visible=0x01010194,
+	attr_variablePadding=0x01010195,
+	attr_constantSize=0x01010196,
+	attr_oneshot=0x01010197,
+	attr_duration=0x01010198,
+	attr_drawable=0x01010199,
+	attr_shape=0x0101019a,
+	attr_innerRadiusRatio=0x0101019b,
+	attr_thicknessRatio=0x0101019c,
+	attr_startColor=0x0101019d,
+	attr_endColor=0x0101019e,
+	attr_useLevel=0x0101019f,
+	attr_angle=0x010101a0,
+	attr_type=0x010101a1,
+	attr_centerX=0x010101a2,
+	attr_centerY=0x010101a3,
+	attr_gradientRadius=0x010101a4,
+	attr_color=0x010101a5,
+	attr_dashWidth=0x010101a6,
+	attr_dashGap=0x010101a7,
+	attr_radius=0x010101a8,
+	attr_topLeftRadius=0x010101a9,
+	attr_topRightRadius=0x010101aa,
+	attr_bottomLeftRadius=0x010101ab,
+	attr_bottomRightRadius=0x010101ac,
+	attr_left=0x010101ad,
+	attr_top=0x010101ae,
+	attr_right=0x010101af,
+	attr_bottom=0x010101b0,
+	attr_minLevel=0x010101b1,
+	attr_maxLevel=0x010101b2,
+	attr_fromDegrees=0x010101b3,
+	attr_toDegrees=0x010101b4,
+	attr_pivotX=0x010101b5,
+	attr_pivotY=0x010101b6,
+	attr_insetLeft=0x010101b7,
+	attr_insetRight=0x010101b8,
+	attr_insetTop=0x010101b9,
+	attr_insetBottom=0x010101ba,
+	attr_shareInterpolator=0x010101bb,
+	attr_fillBefore=0x010101bc,
+	attr_fillAfter=0x010101bd,
+	attr_startOffset=0x010101be,
+	attr_repeatCount=0x010101bf,
+	attr_repeatMode=0x010101c0,
+	attr_zAdjustment=0x010101c1,
+	attr_fromXScale=0x010101c2,
+	attr_toXScale=0x010101c3,
+	attr_fromYScale=0x010101c4,
+	attr_toYScale=0x010101c5,
+	attr_fromXDelta=0x010101c6,
+	attr_toXDelta=0x010101c7,
+	attr_fromYDelta=0x010101c8,
+	attr_toYDelta=0x010101c9,
+	attr_fromAlpha=0x010101ca,
+	attr_toAlpha=0x010101cb,
+	attr_delay=0x010101cc,
+	attr_animation=0x010101cd,
+	attr_animationOrder=0x010101ce,
+	attr_columnDelay=0x010101cf,
+	attr_rowDelay=0x010101d0,
+	attr_direction=0x010101d1,
+	attr_directionPriority=0x010101d2,
+	attr_factor=0x010101d3,
+	attr_cycles=0x010101d4,
+	attr_searchMode=0x010101d5,
+	attr_searchSuggestAuthority=0x010101d6,
+	attr_searchSuggestPath=0x010101d7,
+	attr_searchSuggestSelection=0x010101d8,
+	attr_searchSuggestIntentAction=0x010101d9,
+	attr_searchSuggestIntentData=0x010101da,
+	attr_queryActionMsg=0x010101db,
+	attr_suggestActionMsg=0x010101dc,
+	attr_suggestActionMsgColumn=0x010101dd,
+	attr_menuCategory=0x010101de,
+	attr_orderInCategory=0x010101df,
+	attr_checkableBehavior=0x010101e0,
+	attr_title=0x010101e1,
+	attr_titleCondensed=0x010101e2,
+	attr_alphabeticShortcut=0x010101e3,
+	attr_numericShortcut=0x010101e4,
+	attr_checkable=0x010101e5,
+	attr_selectable=0x010101e6,
+	attr_orderingFromXml=0x010101e7,
+	attr_key=0x010101e8,
+	attr_summary=0x010101e9,
+	attr_order=0x010101ea,
+	attr_widgetLayout=0x010101eb,
+	attr_dependency=0x010101ec,
+	attr_defaultValue=0x010101ed,
+	attr_shouldDisableView=0x010101ee,
+	attr_summaryOn=0x010101ef,
+	attr_summaryOff=0x010101f0,
+	attr_disableDependentsState=0x010101f1,
+	attr_dialogTitle=0x010101f2,
+	attr_dialogMessage=0x010101f3,
+	attr_dialogIcon=0x010101f4,
+	attr_positiveButtonText=0x010101f5,
+	attr_negativeButtonText=0x010101f6,
+	attr_dialogLayout=0x010101f7,
+	attr_entryValues=0x010101f8,
+	attr_ringtoneType=0x010101f9,
+	attr_showDefault=0x010101fa,
+	attr_showSilent=0x010101fb,
+	attr_scaleWidth=0x010101fc,
+	attr_scaleHeight=0x010101fd,
+	attr_scaleGravity=0x010101fe,
+	attr_ignoreGravity=0x010101ff,
+	attr_foregroundGravity=0x01010200,
+	attr_tileMode=0x01010201,
+	attr_targetActivity=0x01010202,
+	attr_alwaysRetainTaskState=0x01010203,
+	attr_allowTaskReparenting=0x01010204,
+	attr_searchButtonText=0x01010205,
+	attr_colorForegroundInverse=0x01010206,
+	attr_textAppearanceButton=0x01010207,
+	attr_listSeparatorTextViewStyle=0x01010208,
+	attr_streamType=0x01010209,
+	attr_clipOrientation=0x0101020a,
+	attr_centerColor=0x0101020b,
+	attr_minSdkVersion=0x0101020c,
+	attr_windowFullscreen=0x0101020d,
+	attr_unselectedAlpha=0x0101020e,
+	attr_progressBarStyleSmallTitle=0x0101020f,
+	attr_ratingBarStyleIndicator=0x01010210,
+	attr_apiKey=0x01010211,
+	attr_textColorTertiary=0x01010212,
+	attr_textColorTertiaryInverse=0x01010213,
+	attr_listDivider=0x01010214,
+	attr_soundEffectsEnabled=0x01010215,
+	attr_keepScreenOn=0x01010216,
+	attr_lineSpacingExtra=0x01010217,
+	attr_lineSpacingMultiplier=0x01010218,
+	attr_listChoiceIndicatorSingle=0x01010219,
+	attr_listChoiceIndicatorMultiple=0x0101021a,
+	attr_versionCode=0x0101021b,
+	attr_versionName=0x0101021c,
+	id_background=0x01020000,
+	id_checkbox=0x01020001,
+	id_content=0x01020002,
+	id_edit=0x01020003,
+	id_empty=0x01020004,
+	id_hint=0x01020005,
+	id_icon=0x01020006,
+	id_icon1=0x01020007,
+	id_icon2=0x01020008,
+	id_input=0x01020009,
+	id_list=0x0102000a,
+	id_message=0x0102000b,
+	id_primary=0x0102000c,
+	id_progress=0x0102000d,
+	id_selectedIcon=0x0102000e,
+	id_secondaryProgress=0x0102000f,
+	id_summary=0x01020010,
+	id_tabcontent=0x01020011,
+	id_tabhost=0x01020012,
+	id_tabs=0x01020013,
+	id_text1=0x01020014,
+	id_text2=0x01020015,
+	id_title=0x01020016,
+	id_toggle=0x01020017,
+	id_widget_frame=0x01020018,
+	id_button1=0x01020019,
+	id_button2=0x0102001a,
+	id_button3=0x0102001b,
+	style_Animation=0x01030000,
+	style_Animation_Activity=0x01030001,
+	style_Animation_Dialog=0x01030002,
+	style_Animation_Translucent=0x01030003,
+	style_Animation_Toast=0x01030004,
+	style_Theme=0x01030005,
+	style_Theme_NoTitleBar=0x01030006,
+	style_Theme_NoTitleBar_Fullscreen=0x01030007,
+	style_Theme_Black=0x01030008,
+	style_Theme_Black_NoTitleBar=0x01030009,
+	style_Theme_Black_NoTitleBar_Fullscreen=0x0103000a,
+	style_Theme_Dialog=0x0103000b,
+	style_Theme_Light=0x0103000c,
+	style_Theme_Light_NoTitleBar=0x0103000d,
+	style_Theme_Light_NoTitleBar_Fullscreen=0x0103000e,
+	style_Theme_Translucent=0x0103000f,
+	style_Theme_Translucent_NoTitleBar=0x01030010,
+	style_Theme_Translucent_NoTitleBar_Fullscreen=0x01030011,
+	style_Widget=0x01030012,
+	style_Widget_AbsListView=0x01030013,
+	style_Widget_Button=0x01030014,
+	style_Widget_Button_Inset=0x01030015,
+	style_Widget_Button_Small=0x01030016,
+	style_Widget_Button_Toggle=0x01030017,
+	style_Widget_CompoundButton=0x01030018,
+	style_Widget_CompoundButton_CheckBox=0x01030019,
+	style_Widget_CompoundButton_RadioButton=0x0103001a,
+	style_Widget_CompoundButton_Star=0x0103001b,
+	style_Widget_ProgressBar=0x0103001c,
+	style_Widget_ProgressBar_Large=0x0103001d,
+	style_Widget_ProgressBar_Small=0x0103001e,
+	style_Widget_ProgressBar_Horizontal=0x0103001f,
+	style_Widget_SeekBar=0x01030020,
+	style_Widget_RatingBar=0x01030021,
+	style_Widget_TextView=0x01030022,
+	style_Widget_EditText=0x01030023,
+	style_Widget_ExpandableListView=0x01030024,
+	style_Widget_ImageWell=0x01030025,
+	style_Widget_ImageButton=0x01030026,
+	style_Widget_AutoCompleteTextView=0x01030027,
+	style_Widget_Spinner=0x01030028,
+	style_Widget_TextView_PopupMenu=0x01030029,
+	style_Widget_TextView_SpinnerItem=0x0103002a,
+	style_Widget_DropDownItem=0x0103002b,
+	style_Widget_DropDownItem_Spinner=0x0103002c,
+	style_Widget_ScrollView=0x0103002d,
+	style_Widget_ListView=0x0103002e,
+	style_Widget_ListView_White=0x0103002f,
+	style_Widget_ListView_DropDown=0x01030030,
+	style_Widget_ListView_Menu=0x01030031,
+	style_Widget_GridView=0x01030032,
+	style_Widget_WebView=0x01030033,
+	style_Widget_TabWidget=0x01030034,
+	style_Widget_Gallery=0x01030035,
+	style_Widget_PopupWindow=0x01030036,
+	style_MediaButton=0x01030037,
+	style_MediaButton_Previous=0x01030038,
+	style_MediaButton_Next=0x01030039,
+	style_MediaButton_Play=0x0103003a,
+	style_MediaButton_Ffwd=0x0103003b,
+	style_MediaButton_Rew=0x0103003c,
+	style_MediaButton_Pause=0x0103003d,
+	style_TextAppearance=0x0103003e,
+	style_TextAppearance_Inverse=0x0103003f,
+	style_TextAppearance_Theme=0x01030040,
+	style_TextAppearance_DialogWindowTitle=0x01030041,
+	style_TextAppearance_Large=0x01030042,
+	style_TextAppearance_Large_Inverse=0x01030043,
+	style_TextAppearance_Medium=0x01030044,
+	style_TextAppearance_Medium_Inverse=0x01030045,
+	style_TextAppearance_Small=0x01030046,
+	style_TextAppearance_Small_Inverse=0x01030047,
+	style_TextAppearance_Theme_Dialog=0x01030048,
+	style_TextAppearance_Widget=0x01030049,
+	style_TextAppearance_Widget_Button=0x0103004a,
+	style_TextAppearance_Widget_IconMenu_Item=0x0103004b,
+	style_TextAppearance_Widget_EditText=0x0103004c,
+	style_TextAppearance_Widget_TabWidget=0x0103004d,
+	style_TextAppearance_Widget_TextView=0x0103004e,
+	style_TextAppearance_Widget_TextView_PopupMenu=0x0103004f,
+	style_TextAppearance_Widget_DropDownHint=0x01030050,
+	style_TextAppearance_Widget_DropDownItem=0x01030051,
+	style_TextAppearance_Widget_TextView_SpinnerItem=0x01030052,
+	style_TextAppearance_WindowTitle=0x01030053,
+	string_cancel=0x01040000,
+	string_copy=0x01040001,
+	string_copyUrl=0x01040002,
+	string_cut=0x01040003,
+	string_defaultVoiceMailAlphaTag=0x01040004,
+	string_defaultMsisdnAlphaTag=0x01040005,
+	string_emptyPhoneNumber=0x01040006,
+	string_httpErrorBadUrl=0x01040007,
+	string_httpErrorUnsupportedScheme=0x01040008,
+	string_no=0x01040009,
+	string_ok=0x0104000a,
+	string_paste=0x0104000b,
+	string_search_go=0x0104000c,
+	string_selectAll=0x0104000d,
+	string_unknownName=0x0104000e,
+	string_untitled=0x0104000f,
+	string_VideoView_error_button=0x01040010,
+	string_VideoView_error_text_unknown=0x01040011,
+	string_VideoView_error_title=0x01040012,
+	string_yes=0x01040013,
+	dimen_app_icon_size=0x01050000,
+	dimen_thumbnail_height=0x01050001,
+	dimen_thumbnail_width=0x01050002,
+	color_darker_gray=0x01060000,
+	color_primary_text_dark=0x01060001,
+	color_primary_text_dark_nodisable=0x01060002,
+	color_primary_text_light=0x01060003,
+	color_primary_text_light_nodisable=0x01060004,
+	color_secondary_text_dark=0x01060005,
+	color_secondary_text_dark_nodisable=0x01060006,
+	color_secondary_text_light=0x01060007,
+	color_secondary_text_light_nodisable=0x01060008,
+	color_tab_indicator_text=0x01060009,
+	color_widget_edittext_dark=0x0106000a,
+	color_white=0x0106000b,
+	color_black=0x0106000c,
+	color_transparent=0x0106000d,
+	color_background_dark=0x0106000e,
+	color_background_light=0x0106000f,
+	color_tertiary_text_dark=0x01060010,
+	color_tertiary_text_light=0x01060011,
+	array_emailAddressTypes=0x01070000,
+	array_imProtocols=0x01070001,
+	array_organizationTypes=0x01070002,
+	array_phoneTypes=0x01070003,
+	array_postalAddressTypes=0x01070004,
+	drawable_alert_dark_frame=0x01080000,
+	drawable_alert_light_frame=0x01080001,
+	drawable_arrow_down_float=0x01080002,
+	drawable_arrow_up_float=0x01080003,
+	drawable_btn_default=0x01080004,
+	drawable_btn_default_small=0x01080005,
+	drawable_btn_dropdown=0x01080006,
+	drawable_btn_minus=0x01080007,
+	drawable_btn_plus=0x01080008,
+	drawable_btn_radio=0x01080009,
+	drawable_btn_star=0x0108000a,
+	drawable_btn_star_big_off=0x0108000b,
+	drawable_btn_star_big_on=0x0108000c,
+	drawable_button_onoff_indicator_on=0x0108000d,
+	drawable_button_onoff_indicator_off=0x0108000e,
+	drawable_checkbox_off_background=0x0108000f,
+	drawable_checkbox_on_background=0x01080010,
+	drawable_dialog_frame=0x01080011,
+	drawable_divider_horizontal_bright=0x01080012,
+	drawable_divider_horizontal_textfield=0x01080013,
+	drawable_divider_horizontal_dark=0x01080014,
+	drawable_divider_horizontal_dim_dark=0x01080015,
+	drawable_edit_text=0x01080016,
+	drawable_btn_dialog=0x01080017,
+	drawable_editbox_background=0x01080018,
+	drawable_editbox_background_normal=0x01080019,
+	drawable_editbox_dropdown_dark_frame=0x0108001a,
+	drawable_editbox_dropdown_light_frame=0x0108001b,
+	drawable_gallery_thumb=0x0108001c,
+	drawable_ic_delete=0x0108001d,
+	drawable_ic_lock_idle_charging=0x0108001e,
+	drawable_ic_lock_idle_lock=0x0108001f,
+	drawable_ic_lock_idle_low_battery=0x01080020,
+	drawable_ic_media_ff=0x01080021,
+	drawable_ic_media_next=0x01080022,
+	drawable_ic_media_pause=0x01080023,
+	drawable_ic_media_play=0x01080024,
+	drawable_ic_media_previous=0x01080025,
+	drawable_ic_media_rew=0x01080026,
+	drawable_ic_dialog_alert=0x01080027,
+	drawable_ic_dialog_dialer=0x01080028,
+	drawable_ic_dialog_email=0x01080029,
+	drawable_ic_dialog_map=0x0108002a,
+	drawable_ic_input_add=0x0108002b,
+	drawable_ic_input_delete=0x0108002c,
+	drawable_ic_input_get=0x0108002d,
+	drawable_ic_lock_idle_alarm=0x0108002e,
+	drawable_ic_lock_lock=0x0108002f,
+	drawable_ic_lock_power_off=0x01080030,
+	drawable_ic_lock_silent_mode=0x01080031,
+	drawable_ic_lock_silent_mode_off=0x01080032,
+	drawable_ic_menu_add=0x01080033,
+	drawable_ic_menu_agenda=0x01080034,
+	drawable_ic_menu_always_landscape_portrait=0x01080035,
+	drawable_ic_menu_call=0x01080036,
+	drawable_ic_menu_camera=0x01080037,
+	drawable_ic_menu_close_clear_cancel=0x01080038,
+	drawable_ic_menu_compass=0x01080039,
+	drawable_ic_menu_crop=0x0108003a,
+	drawable_ic_menu_day=0x0108003b,
+	drawable_ic_menu_delete=0x0108003c,
+	drawable_ic_menu_directions=0x0108003d,
+	drawable_ic_menu_edit=0x0108003e,
+	drawable_ic_menu_gallery=0x0108003f,
+	drawable_ic_menu_help=0x01080040,
+	drawable_ic_menu_info_details=0x01080041,
+	drawable_ic_menu_manage=0x01080042,
+	drawable_ic_menu_mapmode=0x01080043,
+	drawable_ic_menu_month=0x01080044,
+	drawable_ic_menu_more=0x01080045,
+	drawable_ic_menu_my_calendar=0x01080046,
+	drawable_ic_menu_mylocation=0x01080047,
+	drawable_ic_menu_myplaces=0x01080048,
+	drawable_ic_menu_preferences=0x01080049,
+	drawable_ic_menu_recent_history=0x0108004a,
+	drawable_ic_menu_report_image=0x0108004b,
+	drawable_ic_menu_revert=0x0108004c,
+	drawable_ic_menu_rotate=0x0108004d,
+	drawable_ic_menu_save=0x0108004e,
+	drawable_ic_menu_search=0x0108004f,
+	drawable_ic_menu_send=0x01080050,
+	drawable_ic_menu_set_as=0x01080051,
+	drawable_ic_menu_share=0x01080052,
+	drawable_ic_menu_slideshow=0x01080053,
+	drawable_ic_menu_today=0x01080054,
+	drawable_ic_menu_upload=0x01080055,
+	drawable_ic_menu_upload_you_tube=0x01080056,
+	drawable_ic_menu_view=0x01080057,
+	drawable_ic_menu_week=0x01080058,
+	drawable_ic_menu_zoom=0x01080059,
+	drawable_ic_notification_clear_all=0x0108005a,
+	drawable_ic_notification_overlay=0x0108005b,
+	drawable_ic_partial_secure=0x0108005c,
+	drawable_ic_popup_disk_full=0x0108005d,
+	drawable_ic_popup_reminder=0x0108005e,
+	drawable_ic_popup_sync=0x0108005f,
+	drawable_ic_search_category_default=0x01080060,
+	drawable_ic_secure=0x01080061,
+	drawable_list_selector_background=0x01080062,
+	drawable_menu_frame=0x01080063,
+	drawable_menu_full_frame=0x01080064,
+	drawable_menuitem_background=0x01080065,
+	drawable_picture_frame=0x01080066,
+	drawable_presence_away=0x01080067,
+	drawable_presence_busy=0x01080068,
+	drawable_presence_invisible=0x01080069,
+	drawable_presence_offline=0x0108006a,
+	drawable_presence_online=0x0108006b,
+	drawable_progress_horizontal=0x0108006c,
+	drawable_progress_indeterminate_horizontal=0x0108006d,
+	drawable_radiobutton_off_background=0x0108006e,
+	drawable_radiobutton_on_background=0x0108006f,
+	drawable_spinner_background=0x01080070,
+	drawable_spinner_dropdown_background=0x01080071,
+	drawable_star_big_on=0x01080072,
+	drawable_star_big_off=0x01080073,
+	drawable_star_on=0x01080074,
+	drawable_star_off=0x01080075,
+	drawable_stat_notify_call_mute=0x01080076,
+	drawable_stat_notify_chat=0x01080077,
+	drawable_stat_notify_error=0x01080078,
+	drawable_stat_notify_more=0x01080079,
+	drawable_stat_notify_sdcard=0x0108007a,
+	drawable_stat_notify_sdcard_usb=0x0108007b,
+	drawable_stat_notify_sync=0x0108007c,
+	drawable_stat_notify_sync_noanim=0x0108007d,
+	drawable_stat_notify_voicemail=0x0108007e,
+	drawable_stat_notify_missed_call=0x0108007f,
+	drawable_stat_sys_data_bluetooth=0x01080080,
+	drawable_stat_sys_download=0x01080081,
+	drawable_stat_sys_download_done=0x01080082,
+	drawable_stat_sys_headset=0x01080083,
+	drawable_stat_sys_phone_call=0x01080084,
+	drawable_stat_sys_phone_call_forward=0x01080085,
+	drawable_stat_sys_phone_call_on_hold=0x01080086,
+	drawable_stat_sys_speakerphone=0x01080087,
+	drawable_stat_sys_upload=0x01080088,
+	drawable_stat_sys_upload_done=0x01080089,
+	drawable_stat_sys_warning=0x0108008a,
+	drawable_status_bar_item_app_background=0x0108008b,
+	drawable_status_bar_item_background=0x0108008c,
+	drawable_sym_action_call=0x0108008d,
+	drawable_sym_action_chat=0x0108008e,
+	drawable_sym_action_email=0x0108008f,
+	drawable_sym_call_incoming=0x01080090,
+	drawable_sym_call_missed=0x01080091,
+	drawable_sym_call_outgoing=0x01080092,
+	drawable_sym_def_app_icon=0x01080093,
+	drawable_sym_contact_card=0x01080094,
+	drawable_title_bar=0x01080095,
+	drawable_toast_frame=0x01080096,
+	drawable_zoom_plate=0x01080097,
+	drawable_screen_background_dark=0x01080098,
+	drawable_screen_background_light=0x01080099,
+	drawable_bottom_bar=0x0108009a,
+	drawable_ic_dialog_info=0x0108009b,
+	drawable_ic_menu_sort_alphabetically=0x0108009c,
+	drawable_ic_menu_sort_by_size=0x0108009d,
+	layout_activity_list_item=0x01090000,
+	layout_expandable_list_content=0x01090001,
+	layout_preference_category=0x01090002,
+	layout_simple_list_item_1=0x01090003,
+	layout_simple_list_item_2=0x01090004,
+	layout_simple_list_item_checked=0x01090005,
+	layout_simple_expandable_list_item_1=0x01090006,
+	layout_simple_expandable_list_item_2=0x01090007,
+	layout_simple_spinner_item=0x01090008,
+	layout_simple_spinner_dropdown_item=0x01090009,
+	layout_simple_dropdown_item_1line=0x0109000a,
+	layout_simple_gallery_item=0x0109000b,
+	layout_test_list_item=0x0109000c,
+	layout_two_line_list_item=0x0109000d,
+	layout_browser_link_context_header=0x0109000e,
+	layout_simple_list_item_single_choice=0x0109000f,
+	layout_simple_list_item_multiple_choice=0x01090010,
+	layout_select_dialog_item=0x01090011,
+	layout_select_dialog_singlechoice=0x01090012,
+	layout_select_dialog_multichoice=0x01090013,
+	anim_fade_in=0x010a0000,
+	anim_fade_out=0x010a0001,
+	anim_slide_in_left=0x010a0002,
+	anim_slide_out_right=0x010a0003,
+	anim_accelerate_decelerate_interpolator=0x010a0004,
+	anim_accelerate_interpolator=0x010a0005,
+	anim_decelerate_interpolator=0x010a0006,
+	attr_marqueeRepeatLimit=0x0101021d,
+	attr_windowNoDisplay=0x0101021e,
+	attr_backgroundDimEnabled=0x0101021f,
+	attr_inputType=0x01010220,
+	attr_isDefault=0x01010221,
+	attr_windowDisablePreview=0x01010222,
+	attr_privateImeOptions=0x01010223,
+	attr_editorExtras=0x01010224,
+	attr_settingsActivity=0x01010225,
+	attr_fastScrollEnabled=0x01010226,
+	attr_reqTouchScreen=0x01010227,
+	attr_reqKeyboardType=0x01010228,
+	attr_reqHardKeyboard=0x01010229,
+	attr_reqNavigation=0x0101022a,
+	attr_windowSoftInputMode=0x0101022b,
+	attr_imeFullscreenBackground=0x0101022c,
+	attr_noHistory=0x0101022d,
+	attr_headerDividersEnabled=0x0101022e,
+	attr_footerDividersEnabled=0x0101022f,
+	attr_candidatesTextStyleSpans=0x01010230,
+	attr_smoothScrollbar=0x01010231,
+	attr_reqFiveWayNav=0x01010232,
+	attr_keyBackground=0x01010233,
+	attr_keyTextSize=0x01010234,
+	attr_labelTextSize=0x01010235,
+	attr_keyTextColor=0x01010236,
+	attr_keyPreviewLayout=0x01010237,
+	attr_keyPreviewOffset=0x01010238,
+	attr_keyPreviewHeight=0x01010239,
+	attr_verticalCorrection=0x0101023a,
+	attr_popupLayout=0x0101023b,
+	attr_state_long_pressable=0x0101023c,
+	attr_keyWidth=0x0101023d,
+	attr_keyHeight=0x0101023e,
+	attr_horizontalGap=0x0101023f,
+	attr_verticalGap=0x01010240,
+	attr_rowEdgeFlags=0x01010241,
+	attr_codes=0x01010242,
+	attr_popupKeyboard=0x01010243,
+	attr_popupCharacters=0x01010244,
+	attr_keyEdgeFlags=0x01010245,
+	attr_isModifier=0x01010246,
+	attr_isSticky=0x01010247,
+	attr_isRepeatable=0x01010248,
+	attr_iconPreview=0x01010249,
+	attr_keyOutputText=0x0101024a,
+	attr_keyLabel=0x0101024b,
+	attr_keyIcon=0x0101024c,
+	attr_keyboardMode=0x0101024d,
+	attr_isScrollContainer=0x0101024e,
+	attr_fillEnabled=0x0101024f,
+	attr_updatePeriodMillis=0x01010250,
+	attr_initialLayout=0x01010251,
+	attr_voiceSearchMode=0x01010252,
+	attr_voiceLanguageModel=0x01010253,
+	attr_voicePromptText=0x01010254,
+	attr_voiceLanguage=0x01010255,
+	attr_voiceMaxResults=0x01010256,
+	attr_bottomOffset=0x01010257,
+	attr_topOffset=0x01010258,
+	attr_allowSingleTap=0x01010259,
+	attr_handle=0x0101025a,
+	attr_content=0x0101025b,
+	attr_animateOnClick=0x0101025c,
+	attr_configure=0x0101025d,
+	attr_hapticFeedbackEnabled=0x0101025e,
+	attr_innerRadius=0x0101025f,
+	attr_thickness=0x01010260,
+	attr_sharedUserLabel=0x01010261,
+	attr_dropDownWidth=0x01010262,
+	attr_dropDownAnchor=0x01010263,
+	attr_imeOptions=0x01010264,
+	attr_imeActionLabel=0x01010265,
+	attr_imeActionId=0x01010266,
+	attr_imeExtractEnterAnimation=0x01010268,
+	attr_imeExtractExitAnimation=0x01010269,
+	id_extractArea=0x0102001c,
+	id_candidatesArea=0x0102001d,
+	id_inputArea=0x0102001e,
+	id_selectAll=0x0102001f,
+	id_cut=0x01020020,
+	id_copy=0x01020021,
+	id_paste=0x01020022,
+	id_copyUrl=0x01020023,
+	id_switchInputMethod=0x01020024,
+	id_inputExtractEditText=0x01020025,
+	id_keyboardView=0x01020026,
+	id_closeButton=0x01020027,
+	id_startSelectingText=0x01020028,
+	id_stopSelectingText=0x01020029,
+	id_addToDictionary=0x0102002a,
+	style_Theme_InputMethod=0x01030054,
+	style_Theme_NoDisplay=0x01030055,
+	style_Animation_InputMethod=0x01030056,
+	style_Widget_KeyboardView=0x01030057,
+	style_ButtonBar=0x01030058,
+	style_Theme_Panel=0x01030059,
+	style_Theme_Light_Panel=0x0103005a,
+	string_dialog_alert_title=0x01040014,
+	string_VideoView_error_text_invalid_progressive_playback=0x01040015,
+	drawable_ic_btn_speak_now=0x010800a4,
+	drawable_dark_header=0x010800a5,
+	drawable_title_bar_tall=0x010800a6,
+	integer_config_shortAnimTime=0x010e0000,
+	integer_config_mediumAnimTime=0x010e0001,
+	integer_config_longAnimTime=0x010e0002,
+	attr_tension=0x0101026a,
+	attr_extraTension=0x0101026b,
+	attr_anyDensity=0x0101026c,
+	attr_searchSuggestThreshold=0x0101026d,
+	attr_includeInGlobalSearch=0x0101026e,
+	attr_onClick=0x0101026f,
+	attr_targetSdkVersion=0x01010270,
+	attr_maxSdkVersion=0x01010271,
+	attr_testOnly=0x01010272,
+	attr_contentDescription=0x01010273,
+	attr_gestureStrokeWidth=0x01010274,
+	attr_gestureColor=0x01010275,
+	attr_uncertainGestureColor=0x01010276,
+	attr_fadeOffset=0x01010277,
+	attr_fadeDuration=0x01010278,
+	attr_gestureStrokeType=0x01010279,
+	attr_gestureStrokeLengthThreshold=0x0101027a,
+	attr_gestureStrokeSquarenessThreshold=0x0101027b,
+	attr_gestureStrokeAngleThreshold=0x0101027c,
+	attr_eventsInterceptionEnabled=0x0101027d,
+	attr_fadeEnabled=0x0101027e,
+	attr_backupAgent=0x0101027f,
+	attr_allowBackup=0x01010280,
+	attr_glEsVersion=0x01010281,
+	attr_queryAfterZeroResults=0x01010282,
+	attr_dropDownHeight=0x01010283,
+	attr_smallScreens=0x01010284,
+	attr_normalScreens=0x01010285,
+	attr_largeScreens=0x01010286,
+	attr_progressBarStyleInverse=0x01010287,
+	attr_progressBarStyleSmallInverse=0x01010288,
+	attr_progressBarStyleLargeInverse=0x01010289,
+	attr_searchSettingsDescription=0x0101028a,
+	attr_textColorPrimaryInverseDisableOnly=0x0101028b,
+	attr_autoUrlDetect=0x0101028c,
+	attr_resizeable=0x0101028d,
+	style_Widget_ProgressBar_Inverse=0x0103005b,
+	style_Widget_ProgressBar_Large_Inverse=0x0103005c,
+	style_Widget_ProgressBar_Small_Inverse=0x0103005d,
+	drawable_stat_sys_vp_phone_call=0x010800a7,
+	drawable_stat_sys_vp_phone_call_on_hold=0x010800a8,
+	anim_anticipate_interpolator=0x010a0007,
+	anim_overshoot_interpolator=0x010a0008,
+	anim_anticipate_overshoot_interpolator=0x010a0009,
+	anim_bounce_interpolator=0x010a000a,
+	anim_linear_interpolator=0x010a000b,
+	attr_required=0x0101028e,
+	attr_accountType=0x0101028f,
+	attr_contentAuthority=0x01010290,
+	attr_userVisible=0x01010291,
+	attr_windowShowWallpaper=0x01010292,
+	attr_wallpaperOpenEnterAnimation=0x01010293,
+	attr_wallpaperOpenExitAnimation=0x01010294,
+	attr_wallpaperCloseEnterAnimation=0x01010295,
+	attr_wallpaperCloseExitAnimation=0x01010296,
+	attr_wallpaperIntraOpenEnterAnimation=0x01010297,
+	attr_wallpaperIntraOpenExitAnimation=0x01010298,
+	attr_wallpaperIntraCloseEnterAnimation=0x01010299,
+	attr_wallpaperIntraCloseExitAnimation=0x0101029a,
+	attr_supportsUploading=0x0101029b,
+	attr_killAfterRestore=0x0101029c,
+	attr_restoreNeedsApplication=0x0101029d,
+	attr_smallIcon=0x0101029e,
+	attr_accountPreferences=0x0101029f,
+	attr_textAppearanceSearchResultSubtitle=0x010102a0,
+	attr_textAppearanceSearchResultTitle=0x010102a1,
+	attr_summaryColumn=0x010102a2,
+	attr_detailColumn=0x010102a3,
+	attr_detailSocialSummary=0x010102a4,
+	attr_thumbnail=0x010102a5,
+	attr_detachWallpaper=0x010102a6,
+	attr_finishOnCloseSystemDialogs=0x010102a7,
+	attr_scrollbarFadeDuration=0x010102a8,
+	attr_scrollbarDefaultDelayBeforeFade=0x010102a9,
+	attr_fadeScrollbars=0x010102aa,
+	attr_colorBackgroundCacheHint=0x010102ab,
+	attr_dropDownHorizontalOffset=0x010102ac,
+	attr_dropDownVerticalOffset=0x010102ad,
+	style_Theme_Wallpaper=0x0103005e,
+	style_Theme_Wallpaper_NoTitleBar=0x0103005f,
+	style_Theme_Wallpaper_NoTitleBar_Fullscreen=0x01030060,
+	style_Theme_WallpaperSettings=0x01030061,
+	style_Theme_Light_WallpaperSettings=0x01030062,
+	style_TextAppearance_SearchResult_Title=0x01030063,
+	style_TextAppearance_SearchResult_Subtitle=0x01030064,
+	drawable_screen_background_dark_transparent=0x010800a9,
+	drawable_screen_background_light_transparent=0x010800aa,
+	drawable_stat_notify_sdcard_prepare=0x010800ab,
+	attr_quickContactBadgeStyleWindowSmall=0x010102ae,
+	attr_quickContactBadgeStyleWindowMedium=0x010102af,
+	attr_quickContactBadgeStyleWindowLarge=0x010102b0,
+	attr_quickContactBadgeStyleSmallWindowSmall=0x010102b1,
+	attr_quickContactBadgeStyleSmallWindowMedium=0x010102b2,
+	attr_quickContactBadgeStyleSmallWindowLarge=0x010102b3,
+	attr_author=0x010102b4,
+	attr_autoStart=0x010102b5,
+	attr_expandableListViewWhiteStyle=0x010102b6,
+	attr_installLocation=0x010102b7,
+	attr_vmSafeMode=0x010102b8,
+	attr_webTextViewStyle=0x010102b9,
+	attr_restoreAnyVersion=0x010102ba,
+	attr_tabStripLeft=0x010102bb,
+	attr_tabStripRight=0x010102bc,
+	attr_tabStripEnabled=0x010102bd,
+	id_custom=0x0102002b,
+	anim_cycle_interpolator=0x010a000c,
+	attr_logo=0x010102be,
+	attr_xlargeScreens=0x010102bf,
+	attr_immersive=0x010102c0,
+	attr_overScrollMode=0x010102c1,
+	attr_overScrollHeader=0x010102c2,
+	attr_overScrollFooter=0x010102c3,
+	attr_filterTouchesWhenObscured=0x010102c4,
+	attr_textSelectHandleLeft=0x010102c5,
+	attr_textSelectHandleRight=0x010102c6,
+	attr_textSelectHandle=0x010102c7,
+	attr_textSelectHandleWindowStyle=0x010102c8,
+	attr_popupAnimationStyle=0x010102c9,
+	attr_screenSize=0x010102ca,
+	attr_screenDensity=0x010102cb,
+	drawable_presence_video_away=0x010800ac,
+	drawable_presence_video_busy=0x010800ad,
+	drawable_presence_video_online=0x010800ae,
+	drawable_presence_audio_away=0x010800af,
+	drawable_presence_audio_busy=0x010800b0,
+	drawable_presence_audio_online=0x010800b1,
+	style_TextAppearance_StatusBar_Title=0x01030065,
+	style_TextAppearance_StatusBar_Icon=0x01030066,
+	style_TextAppearance_StatusBar_EventContent=0x01030067,
+	style_TextAppearance_StatusBar_EventContent_Title=0x01030068,
+	attr_allContactsName=0x010102cc,
+	attr_windowActionBar=0x010102cd,
+	attr_actionBarStyle=0x010102ce,
+	attr_navigationMode=0x010102cf,
+	attr_displayOptions=0x010102d0,
+	attr_subtitle=0x010102d1,
+	attr_customNavigationLayout=0x010102d2,
+	attr_hardwareAccelerated=0x010102d3,
+	attr_measureWithLargestChild=0x010102d4,
+	attr_animateFirstView=0x010102d5,
+	attr_dropDownSpinnerStyle=0x010102d6,
+	attr_actionDropDownStyle=0x010102d7,
+	attr_actionButtonStyle=0x010102d8,
+	attr_showAsAction=0x010102d9,
+	attr_previewImage=0x010102da,
+	attr_actionModeBackground=0x010102db,
+	attr_actionModeCloseDrawable=0x010102dc,
+	attr_windowActionModeOverlay=0x010102dd,
+	attr_valueFrom=0x010102de,
+	attr_valueTo=0x010102df,
+	attr_valueType=0x010102e0,
+	attr_propertyName=0x010102e1,
+	attr_ordering=0x010102e2,
+	attr_fragment=0x010102e3,
+	attr_windowActionBarOverlay=0x010102e4,
+	attr_fragmentOpenEnterAnimation=0x010102e5,
+	attr_fragmentOpenExitAnimation=0x010102e6,
+	attr_fragmentCloseEnterAnimation=0x010102e7,
+	attr_fragmentCloseExitAnimation=0x010102e8,
+	attr_fragmentFadeEnterAnimation=0x010102e9,
+	attr_fragmentFadeExitAnimation=0x010102ea,
+	attr_actionBarSize=0x010102eb,
+	attr_imeSubtypeLocale=0x010102ec,
+	attr_imeSubtypeMode=0x010102ed,
+	attr_imeSubtypeExtraValue=0x010102ee,
+	attr_splitMotionEvents=0x010102ef,
+	attr_listChoiceBackgroundIndicator=0x010102f0,
+	attr_spinnerMode=0x010102f1,
+	attr_animateLayoutChanges=0x010102f2,
+	attr_actionBarTabStyle=0x010102f3,
+	attr_actionBarTabBarStyle=0x010102f4,
+	attr_actionBarTabTextStyle=0x010102f5,
+	attr_actionOverflowButtonStyle=0x010102f6,
+	attr_actionModeCloseButtonStyle=0x010102f7,
+	attr_titleTextStyle=0x010102f8,
+	attr_subtitleTextStyle=0x010102f9,
+	attr_iconifiedByDefault=0x010102fa,
+	attr_actionLayout=0x010102fb,
+	attr_actionViewClass=0x010102fc,
+	attr_activatedBackgroundIndicator=0x010102fd,
+	attr_state_activated=0x010102fe,
+	attr_listPopupWindowStyle=0x010102ff,
+	attr_popupMenuStyle=0x01010300,
+	attr_textAppearanceLargePopupMenu=0x01010301,
+	attr_textAppearanceSmallPopupMenu=0x01010302,
+	attr_breadCrumbTitle=0x01010303,
+	attr_breadCrumbShortTitle=0x01010304,
+	attr_listDividerAlertDialog=0x01010305,
+	attr_textColorAlertDialogListItem=0x01010306,
+	attr_loopViews=0x01010307,
+	attr_dialogTheme=0x01010308,
+	attr_alertDialogTheme=0x01010309,
+	attr_dividerVertical=0x0101030a,
+	attr_homeAsUpIndicator=0x0101030b,
+	attr_enterFadeDuration=0x0101030c,
+	attr_exitFadeDuration=0x0101030d,
+	attr_selectableItemBackground=0x0101030e,
+	attr_autoAdvanceViewId=0x0101030f,
+	attr_useIntrinsicSizeAsMinimum=0x01010310,
+	attr_actionModeCutDrawable=0x01010311,
+	attr_actionModeCopyDrawable=0x01010312,
+	attr_actionModePasteDrawable=0x01010313,
+	attr_textEditPasteWindowLayout=0x01010314,
+	attr_textEditNoPasteWindowLayout=0x01010315,
+	attr_textIsSelectable=0x01010316,
+	attr_windowEnableSplitTouch=0x01010317,
+	attr_indeterminateProgressStyle=0x01010318,
+	attr_progressBarPadding=0x01010319,
+	attr_animationResolution=0x0101031a,
+	attr_state_accelerated=0x0101031b,
+	attr_baseline=0x0101031c,
+	attr_homeLayout=0x0101031d,
+	attr_opacity=0x0101031e,
+	attr_alpha=0x0101031f,
+	attr_transformPivotX=0x01010320,
+	attr_transformPivotY=0x01010321,
+	attr_translationX=0x01010322,
+	attr_translationY=0x01010323,
+	attr_scaleX=0x01010324,
+	attr_scaleY=0x01010325,
+	attr_rotation=0x01010326,
+	attr_rotationX=0x01010327,
+	attr_rotationY=0x01010328,
+	attr_showDividers=0x01010329,
+	attr_dividerPadding=0x0101032a,
+	attr_borderlessButtonStyle=0x0101032b,
+	attr_dividerHorizontal=0x0101032c,
+	attr_itemPadding=0x0101032d,
+	attr_buttonBarStyle=0x0101032e,
+	attr_buttonBarButtonStyle=0x0101032f,
+	attr_segmentedButtonStyle=0x01010330,
+	attr_staticWallpaperPreview=0x01010331,
+	attr_allowParallelSyncs=0x01010332,
+	attr_isAlwaysSyncable=0x01010333,
+	attr_verticalScrollbarPosition=0x01010334,
+	attr_fastScrollAlwaysVisible=0x01010335,
+	attr_fastScrollThumbDrawable=0x01010336,
+	attr_fastScrollPreviewBackgroundLeft=0x01010337,
+	attr_fastScrollPreviewBackgroundRight=0x01010338,
+	attr_fastScrollTrackDrawable=0x01010339,
+	attr_fastScrollOverlayPosition=0x0101033a,
+	attr_customTokens=0x0101033b,
+	attr_nextFocusForward=0x0101033c,
+	attr_firstDayOfWeek=0x0101033d,
+	attr_showWeekNumber=0x0101033e,
+	attr_minDate=0x0101033f,
+	attr_maxDate=0x01010340,
+	attr_shownWeekCount=0x01010341,
+	attr_selectedWeekBackgroundColor=0x01010342,
+	attr_focusedMonthDateColor=0x01010343,
+	attr_unfocusedMonthDateColor=0x01010344,
+	attr_weekNumberColor=0x01010345,
+	attr_weekSeparatorLineColor=0x01010346,
+	attr_selectedDateVerticalBar=0x01010347,
+	attr_weekDayTextAppearance=0x01010348,
+	attr_dateTextAppearance=0x01010349,
+	attr_solidColor=0x0101034a,
+	attr_spinnersShown=0x0101034b,
+	attr_calendarViewShown=0x0101034c,
+	attr_state_multiline=0x0101034d,
+	attr_detailsElementBackground=0x0101034e,
+	attr_textColorHighlightInverse=0x0101034f,
+	attr_textColorLinkInverse=0x01010350,
+	attr_editTextColor=0x01010351,
+	attr_editTextBackground=0x01010352,
+	attr_horizontalScrollViewStyle=0x01010353,
+	attr_layerType=0x01010354,
+	attr_alertDialogIcon=0x01010355,
+	attr_windowMinWidthMajor=0x01010356,
+	attr_windowMinWidthMinor=0x01010357,
+	attr_queryHint=0x01010358,
+	attr_fastScrollTextColor=0x01010359,
+	attr_largeHeap=0x0101035a,
+	attr_windowCloseOnTouchOutside=0x0101035b,
+	attr_datePickerStyle=0x0101035c,
+	attr_calendarViewStyle=0x0101035d,
+	attr_textEditSidePasteWindowLayout=0x0101035e,
+	attr_textEditSideNoPasteWindowLayout=0x0101035f,
+	attr_actionMenuTextAppearance=0x01010360,
+	attr_actionMenuTextColor=0x01010361,
+	animator_fade_in=0x010b0000,
+	animator_fade_out=0x010b0001,
+	interpolator_accelerate_quad=0x010c0000,
+	interpolator_decelerate_quad=0x010c0001,
+	interpolator_accelerate_cubic=0x010c0002,
+	interpolator_decelerate_cubic=0x010c0003,
+	interpolator_accelerate_quint=0x010c0004,
+	interpolator_decelerate_quint=0x010c0005,
+	interpolator_accelerate_decelerate=0x010c0006,
+	interpolator_anticipate=0x010c0007,
+	interpolator_overshoot=0x010c0008,
+	interpolator_anticipate_overshoot=0x010c0009,
+	interpolator_bounce=0x010c000a,
+	interpolator_linear=0x010c000b,
+	interpolator_cycle=0x010c000c,
+	id_home=0x0102002c,
+	id_selectTextMode=0x0102002d,
+	dimen_dialog_min_width_major=0x01050003,
+	dimen_dialog_min_width_minor=0x01050004,
+	dimen_notification_large_icon_width=0x01050005,
+	dimen_notification_large_icon_height=0x01050006,
+	layout_list_content=0x01090014,
+	layout_simple_selectable_list_item=0x01090015,
+	layout_simple_list_item_activated_1=0x01090016,
+	layout_simple_list_item_activated_2=0x01090017,
+	drawable_dialog_holo_dark_frame=0x010800b2,
+	drawable_dialog_holo_light_frame=0x010800b3,
+	style_Theme_WithActionBar=0x01030069,
+	style_Theme_NoTitleBar_OverlayActionModes=0x0103006a,
+	style_Theme_Holo=0x0103006b,
+	style_Theme_Holo_NoActionBar=0x0103006c,
+	style_Theme_Holo_NoActionBar_Fullscreen=0x0103006d,
+	style_Theme_Holo_Light=0x0103006e,
+	style_Theme_Holo_Dialog=0x0103006f,
+	style_Theme_Holo_Dialog_MinWidth=0x01030070,
+	style_Theme_Holo_Dialog_NoActionBar=0x01030071,
+	style_Theme_Holo_Dialog_NoActionBar_MinWidth=0x01030072,
+	style_Theme_Holo_Light_Dialog=0x01030073,
+	style_Theme_Holo_Light_Dialog_MinWidth=0x01030074,
+	style_Theme_Holo_Light_Dialog_NoActionBar=0x01030075,
+	style_Theme_Holo_Light_Dialog_NoActionBar_MinWidth=0x01030076,
+	style_Theme_Holo_DialogWhenLarge=0x01030077,
+	style_Theme_Holo_DialogWhenLarge_NoActionBar=0x01030078,
+	style_Theme_Holo_Light_DialogWhenLarge=0x01030079,
+	style_Theme_Holo_Light_DialogWhenLarge_NoActionBar=0x0103007a,
+	style_Theme_Holo_Panel=0x0103007b,
+	style_Theme_Holo_Light_Panel=0x0103007c,
+	style_Theme_Holo_Wallpaper=0x0103007d,
+	style_Theme_Holo_Wallpaper_NoTitleBar=0x0103007e,
+	style_Theme_Holo_InputMethod=0x0103007f,
+	style_TextAppearance_Widget_PopupMenu_Large=0x01030080,
+	style_TextAppearance_Widget_PopupMenu_Small=0x01030081,
+	style_Widget_ActionBar=0x01030082,
+	style_Widget_Spinner_DropDown=0x01030083,
+	style_Widget_ActionButton=0x01030084,
+	style_Widget_ListPopupWindow=0x01030085,
+	style_Widget_PopupMenu=0x01030086,
+	style_Widget_ActionButton_Overflow=0x01030087,
+	style_Widget_ActionButton_CloseMode=0x01030088,
+	style_Widget_FragmentBreadCrumbs=0x01030089,
+	style_Widget_Holo=0x0103008a,
+	style_Widget_Holo_Button=0x0103008b,
+	style_Widget_Holo_Button_Small=0x0103008c,
+	style_Widget_Holo_Button_Inset=0x0103008d,
+	style_Widget_Holo_Button_Toggle=0x0103008e,
+	style_Widget_Holo_TextView=0x0103008f,
+	style_Widget_Holo_AutoCompleteTextView=0x01030090,
+	style_Widget_Holo_CompoundButton_CheckBox=0x01030091,
+	style_Widget_Holo_ListView_DropDown=0x01030092,
+	style_Widget_Holo_EditText=0x01030093,
+	style_Widget_Holo_ExpandableListView=0x01030094,
+	style_Widget_Holo_GridView=0x01030095,
+	style_Widget_Holo_ImageButton=0x01030096,
+	style_Widget_Holo_ListView=0x01030097,
+	style_Widget_Holo_PopupWindow=0x01030098,
+	style_Widget_Holo_ProgressBar=0x01030099,
+	style_Widget_Holo_ProgressBar_Horizontal=0x0103009a,
+	style_Widget_Holo_ProgressBar_Small=0x0103009b,
+	style_Widget_Holo_ProgressBar_Small_Title=0x0103009c,
+	style_Widget_Holo_ProgressBar_Large=0x0103009d,
+	style_Widget_Holo_SeekBar=0x0103009e,
+	style_Widget_Holo_RatingBar=0x0103009f,
+	style_Widget_Holo_RatingBar_Indicator=0x010300a0,
+	style_Widget_Holo_RatingBar_Small=0x010300a1,
+	style_Widget_Holo_CompoundButton_RadioButton=0x010300a2,
+	style_Widget_Holo_ScrollView=0x010300a3,
+	style_Widget_Holo_HorizontalScrollView=0x010300a4,
+	style_Widget_Holo_Spinner=0x010300a5,
+	style_Widget_Holo_CompoundButton_Star=0x010300a6,
+	style_Widget_Holo_TabWidget=0x010300a7,
+	style_Widget_Holo_WebTextView=0x010300a8,
+	style_Widget_Holo_WebView=0x010300a9,
+	style_Widget_Holo_DropDownItem=0x010300aa,
+	style_Widget_Holo_DropDownItem_Spinner=0x010300ab,
+	style_Widget_Holo_TextView_SpinnerItem=0x010300ac,
+	style_Widget_Holo_ListPopupWindow=0x010300ad,
+	style_Widget_Holo_PopupMenu=0x010300ae,
+	style_Widget_Holo_ActionButton=0x010300af,
+	style_Widget_Holo_ActionButton_Overflow=0x010300b0,
+	style_Widget_Holo_ActionButton_TextButton=0x010300b1,
+	style_Widget_Holo_ActionMode=0x010300b2,
+	style_Widget_Holo_ActionButton_CloseMode=0x010300b3,
+	style_Widget_Holo_ActionBar=0x010300b4,
+	style_Widget_Holo_Light=0x010300b5,
+	style_Widget_Holo_Light_Button=0x010300b6,
+	style_Widget_Holo_Light_Button_Small=0x010300b7,
+	style_Widget_Holo_Light_Button_Inset=0x010300b8,
+	style_Widget_Holo_Light_Button_Toggle=0x010300b9,
+	style_Widget_Holo_Light_TextView=0x010300ba,
+	style_Widget_Holo_Light_AutoCompleteTextView=0x010300bb,
+	style_Widget_Holo_Light_CompoundButton_CheckBox=0x010300bc,
+	style_Widget_Holo_Light_ListView_DropDown=0x010300bd,
+	style_Widget_Holo_Light_EditText=0x010300be,
+	style_Widget_Holo_Light_ExpandableListView=0x010300bf,
+	style_Widget_Holo_Light_GridView=0x010300c0,
+	style_Widget_Holo_Light_ImageButton=0x010300c1,
+	style_Widget_Holo_Light_ListView=0x010300c2,
+	style_Widget_Holo_Light_PopupWindow=0x010300c3,
+	style_Widget_Holo_Light_ProgressBar=0x010300c4,
+	style_Widget_Holo_Light_ProgressBar_Horizontal=0x010300c5,
+	style_Widget_Holo_Light_ProgressBar_Small=0x010300c6,
+	style_Widget_Holo_Light_ProgressBar_Small_Title=0x010300c7,
+	style_Widget_Holo_Light_ProgressBar_Large=0x010300c8,
+	style_Widget_Holo_Light_ProgressBar_Inverse=0x010300c9,
+	style_Widget_Holo_Light_ProgressBar_Small_Inverse=0x010300ca,
+	style_Widget_Holo_Light_ProgressBar_Large_Inverse=0x010300cb,
+	style_Widget_Holo_Light_SeekBar=0x010300cc,
+	style_Widget_Holo_Light_RatingBar=0x010300cd,
+	style_Widget_Holo_Light_RatingBar_Indicator=0x010300ce,
+	style_Widget_Holo_Light_RatingBar_Small=0x010300cf,
+	style_Widget_Holo_Light_CompoundButton_RadioButton=0x010300d0,
+	style_Widget_Holo_Light_ScrollView=0x010300d1,
+	style_Widget_Holo_Light_HorizontalScrollView=0x010300d2,
+	style_Widget_Holo_Light_Spinner=0x010300d3,
+	style_Widget_Holo_Light_CompoundButton_Star=0x010300d4,
+	style_Widget_Holo_Light_TabWidget=0x010300d5,
+	style_Widget_Holo_Light_WebTextView=0x010300d6,
+	style_Widget_Holo_Light_WebView=0x010300d7,
+	style_Widget_Holo_Light_DropDownItem=0x010300d8,
+	style_Widget_Holo_Light_DropDownItem_Spinner=0x010300d9,
+	style_Widget_Holo_Light_TextView_SpinnerItem=0x010300da,
+	style_Widget_Holo_Light_ListPopupWindow=0x010300db,
+	style_Widget_Holo_Light_PopupMenu=0x010300dc,
+	style_Widget_Holo_Light_ActionButton=0x010300dd,
+	style_Widget_Holo_Light_ActionButton_Overflow=0x010300de,
+	style_Widget_Holo_Light_ActionMode=0x010300df,
+	style_Widget_Holo_Light_ActionButton_CloseMode=0x010300e0,
+	style_Widget_Holo_Light_ActionBar=0x010300e1,
+	style_Widget_Holo_Button_Borderless=0x010300e2,
+	style_Widget_Holo_Tab=0x010300e3,
+	style_Widget_Holo_Light_Tab=0x010300e4,
+	style_Holo_ButtonBar=0x010300e5,
+	style_Holo_Light_ButtonBar=0x010300e6,
+	style_Holo_ButtonBar_AlertDialog=0x010300e7,
+	style_Holo_Light_ButtonBar_AlertDialog=0x010300e8,
+	style_Holo_SegmentedButton=0x010300e9,
+	style_Holo_Light_SegmentedButton=0x010300ea,
+	style_Widget_CalendarView=0x010300eb,
+	style_Widget_Holo_CalendarView=0x010300ec,
+	style_Widget_Holo_Light_CalendarView=0x010300ed,
+	style_Widget_DatePicker=0x010300ee,
+	style_Widget_Holo_DatePicker=0x010300ef,
+	string_selectTextMode=0x01040016,
+	mipmap_sym_def_app_icon=0x010d0000,
+	attr_textCursorDrawable=0x01010362,
+	attr_resizeMode=0x01010363,
+	attr_requiresSmallestWidthDp=0x01010364,
+	attr_compatibleWidthLimitDp=0x01010365,
+	attr_largestWidthLimitDp=0x01010366,
+	style_Theme_Holo_Light_NoActionBar=0x010300f0,
+	style_Theme_Holo_Light_NoActionBar_Fullscreen=0x010300f1,
+	style_Widget_ActionBar_TabView=0x010300f2,
+	style_Widget_ActionBar_TabText=0x010300f3,
+	style_Widget_ActionBar_TabBar=0x010300f4,
+	style_Widget_Holo_ActionBar_TabView=0x010300f5,
+	style_Widget_Holo_ActionBar_TabText=0x010300f6,
+	style_Widget_Holo_ActionBar_TabBar=0x010300f7,
+	style_Widget_Holo_Light_ActionBar_TabView=0x010300f8,
+	style_Widget_Holo_Light_ActionBar_TabText=0x010300f9,
+	style_Widget_Holo_Light_ActionBar_TabBar=0x010300fa,
+	style_TextAppearance_Holo=0x010300fb,
+	style_TextAppearance_Holo_Inverse=0x010300fc,
+	style_TextAppearance_Holo_Large=0x010300fd,
+	style_TextAppearance_Holo_Large_Inverse=0x010300fe,
+	style_TextAppearance_Holo_Medium=0x010300ff,
+	style_TextAppearance_Holo_Medium_Inverse=0x01030100,
+	style_TextAppearance_Holo_Small=0x01030101,
+	style_TextAppearance_Holo_Small_Inverse=0x01030102,
+	style_TextAppearance_Holo_SearchResult_Title=0x01030103,
+	style_TextAppearance_Holo_SearchResult_Subtitle=0x01030104,
+	style_TextAppearance_Holo_Widget=0x01030105,
+	style_TextAppearance_Holo_Widget_Button=0x01030106,
+	style_TextAppearance_Holo_Widget_IconMenu_Item=0x01030107,
+	style_TextAppearance_Holo_Widget_TabWidget=0x01030108,
+	style_TextAppearance_Holo_Widget_TextView=0x01030109,
+	style_TextAppearance_Holo_Widget_TextView_PopupMenu=0x0103010a,
+	style_TextAppearance_Holo_Widget_DropDownHint=0x0103010b,
+	style_TextAppearance_Holo_Widget_DropDownItem=0x0103010c,
+	style_TextAppearance_Holo_Widget_TextView_SpinnerItem=0x0103010d,
+	style_TextAppearance_Holo_Widget_EditText=0x0103010e,
+	style_TextAppearance_Holo_Widget_PopupMenu=0x0103010f,
+	style_TextAppearance_Holo_Widget_PopupMenu_Large=0x01030110,
+	style_TextAppearance_Holo_Widget_PopupMenu_Small=0x01030111,
+	style_TextAppearance_Holo_Widget_ActionBar_Title=0x01030112,
+	style_TextAppearance_Holo_Widget_ActionBar_Subtitle=0x01030113,
+	style_TextAppearance_Holo_Widget_ActionMode_Title=0x01030114,
+	style_TextAppearance_Holo_Widget_ActionMode_Subtitle=0x01030115,
+	style_TextAppearance_Holo_WindowTitle=0x01030116,
+	style_TextAppearance_Holo_DialogWindowTitle=0x01030117,
+	attr_state_hovered=0x01010367,
+	attr_state_drag_can_accept=0x01010368,
+	attr_state_drag_hovered=0x01010369,
+	attr_stopWithTask=0x0101036a,
+	attr_switchTextOn=0x0101036b,
+	attr_switchTextOff=0x0101036c,
+	attr_switchPreferenceStyle=0x0101036d,
+	attr_switchTextAppearance=0x0101036e,
+	attr_track=0x0101036f,
+	attr_switchMinWidth=0x01010370,
+	attr_switchPadding=0x01010371,
+	attr_thumbTextPadding=0x01010372,
+	attr_textSuggestionsWindowStyle=0x01010373,
+	attr_textEditSuggestionItemLayout=0x01010374,
+	attr_rowCount=0x01010375,
+	attr_rowOrderPreserved=0x01010376,
+	attr_columnCount=0x01010377,
+	attr_columnOrderPreserved=0x01010378,
+	attr_useDefaultMargins=0x01010379,
+	attr_alignmentMode=0x0101037a,
+	attr_layout_row=0x0101037b,
+	attr_layout_rowSpan=0x0101037c,
+	attr_layout_columnSpan=0x0101037d,
+	attr_actionModeSelectAllDrawable=0x0101037e,
+	attr_isAuxiliary=0x0101037f,
+	attr_accessibilityEventTypes=0x01010380,
+	attr_packageNames=0x01010381,
+	attr_accessibilityFeedbackType=0x01010382,
+	attr_notificationTimeout=0x01010383,
+	attr_accessibilityFlags=0x01010384,
+	attr_canRetrieveWindowContent=0x01010385,
+	attr_listPreferredItemHeightLarge=0x01010386,
+	attr_listPreferredItemHeightSmall=0x01010387,
+	attr_actionBarSplitStyle=0x01010388,
+	attr_actionProviderClass=0x01010389,
+	attr_backgroundStacked=0x0101038a,
+	attr_backgroundSplit=0x0101038b,
+	attr_textAllCaps=0x0101038c,
+	attr_colorPressedHighlight=0x0101038d,
+	attr_colorLongPressedHighlight=0x0101038e,
+	attr_colorFocusedHighlight=0x0101038f,
+	attr_colorActivatedHighlight=0x01010390,
+	attr_colorMultiSelectHighlight=0x01010391,
+	attr_drawableStart=0x01010392,
+	attr_drawableEnd=0x01010393,
+	attr_actionModeStyle=0x01010394,
+	attr_minResizeWidth=0x01010395,
+	attr_minResizeHeight=0x01010396,
+	attr_actionBarWidgetTheme=0x01010397,
+	attr_uiOptions=0x01010398,
+	attr_subtypeLocale=0x01010399,
+	attr_subtypeExtraValue=0x0101039a,
+	attr_actionBarDivider=0x0101039b,
+	attr_actionBarItemBackground=0x0101039c,
+	attr_actionModeSplitBackground=0x0101039d,
+	attr_textAppearanceListItem=0x0101039e,
+	attr_textAppearanceListItemSmall=0x0101039f,
+	attr_targetDescriptions=0x010103a0,
+	attr_directionDescriptions=0x010103a1,
+	attr_overridesImplicitlyEnabledSubtype=0x010103a2,
+	attr_listPreferredItemPaddingLeft=0x010103a3,
+	attr_listPreferredItemPaddingRight=0x010103a4,
+	attr_requiresFadingEdge=0x010103a5,
+	attr_publicKey=0x010103a6,
+	style_TextAppearance_SuggestionHighlight=0x01030118,
+	style_Theme_Holo_Light_DarkActionBar=0x01030119,
+	style_Widget_Holo_Button_Borderless_Small=0x0103011a,
+	style_Widget_Holo_Light_Button_Borderless_Small=0x0103011b,
+	style_TextAppearance_Holo_Widget_ActionBar_Title_Inverse=0x0103011c,
+	style_TextAppearance_Holo_Widget_ActionBar_Subtitle_Inverse=0x0103011d,
+	style_TextAppearance_Holo_Widget_ActionMode_Title_Inverse=0x0103011e,
+	style_TextAppearance_Holo_Widget_ActionMode_Subtitle_Inverse=0x0103011f,
+	style_TextAppearance_Holo_Widget_ActionBar_Menu=0x01030120,
+	style_Widget_Holo_ActionBar_Solid=0x01030121,
+	style_Widget_Holo_Light_ActionBar_Solid=0x01030122,
+	style_Widget_Holo_Light_ActionBar_Solid_Inverse=0x01030123,
+	style_Widget_Holo_Light_ActionBar_TabBar_Inverse=0x01030124,
+	style_Widget_Holo_Light_ActionBar_TabView_Inverse=0x01030125,
+	style_Widget_Holo_Light_ActionBar_TabText_Inverse=0x01030126,
+	style_Widget_Holo_Light_ActionMode_Inverse=0x01030127,
+	style_Theme_DeviceDefault=0x01030128,
+	style_Theme_DeviceDefault_NoActionBar=0x01030129,
+	style_Theme_DeviceDefault_NoActionBar_Fullscreen=0x0103012a,
+	style_Theme_DeviceDefault_Light=0x0103012b,
+	style_Theme_DeviceDefault_Light_NoActionBar=0x0103012c,
+	style_Theme_DeviceDefault_Light_NoActionBar_Fullscreen=0x0103012d,
+	style_Theme_DeviceDefault_Dialog=0x0103012e,
+	style_Theme_DeviceDefault_Dialog_MinWidth=0x0103012f,
+	style_Theme_DeviceDefault_Dialog_NoActionBar=0x01030130,
+	style_Theme_DeviceDefault_Dialog_NoActionBar_MinWidth=0x01030131,
+	style_Theme_DeviceDefault_Light_Dialog=0x01030132,
+	style_Theme_DeviceDefault_Light_Dialog_MinWidth=0x01030133,
+	style_Theme_DeviceDefault_Light_Dialog_NoActionBar=0x01030134,
+	style_Theme_DeviceDefault_Light_Dialog_NoActionBar_MinWidth=0x01030135,
+	style_Theme_DeviceDefault_DialogWhenLarge=0x01030136,
+	style_Theme_DeviceDefault_DialogWhenLarge_NoActionBar=0x01030137,
+	style_Theme_DeviceDefault_Light_DialogWhenLarge=0x01030138,
+	style_Theme_DeviceDefault_Light_DialogWhenLarge_NoActionBar=0x01030139,
+	style_Theme_DeviceDefault_Panel=0x0103013a,
+	style_Theme_DeviceDefault_Light_Panel=0x0103013b,
+	style_Theme_DeviceDefault_Wallpaper=0x0103013c,
+	style_Theme_DeviceDefault_Wallpaper_NoTitleBar=0x0103013d,
+	style_Theme_DeviceDefault_InputMethod=0x0103013e,
+	style_Theme_DeviceDefault_Light_DarkActionBar=0x0103013f,
+	style_Widget_DeviceDefault=0x01030140,
+	style_Widget_DeviceDefault_Button=0x01030141,
+	style_Widget_DeviceDefault_Button_Small=0x01030142,
+	style_Widget_DeviceDefault_Button_Inset=0x01030143,
+	style_Widget_DeviceDefault_Button_Toggle=0x01030144,
+	style_Widget_DeviceDefault_Button_Borderless_Small=0x01030145,
+	style_Widget_DeviceDefault_TextView=0x01030146,
+	style_Widget_DeviceDefault_AutoCompleteTextView=0x01030147,
+	style_Widget_DeviceDefault_CompoundButton_CheckBox=0x01030148,
+	style_Widget_DeviceDefault_ListView_DropDown=0x01030149,
+	style_Widget_DeviceDefault_EditText=0x0103014a,
+	style_Widget_DeviceDefault_ExpandableListView=0x0103014b,
+	style_Widget_DeviceDefault_GridView=0x0103014c,
+	style_Widget_DeviceDefault_ImageButton=0x0103014d,
+	style_Widget_DeviceDefault_ListView=0x0103014e,
+	style_Widget_DeviceDefault_PopupWindow=0x0103014f,
+	style_Widget_DeviceDefault_ProgressBar=0x01030150,
+	style_Widget_DeviceDefault_ProgressBar_Horizontal=0x01030151,
+	style_Widget_DeviceDefault_ProgressBar_Small=0x01030152,
+	style_Widget_DeviceDefault_ProgressBar_Small_Title=0x01030153,
+	style_Widget_DeviceDefault_ProgressBar_Large=0x01030154,
+	style_Widget_DeviceDefault_SeekBar=0x01030155,
+	style_Widget_DeviceDefault_RatingBar=0x01030156,
+	style_Widget_DeviceDefault_RatingBar_Indicator=0x01030157,
+	style_Widget_DeviceDefault_RatingBar_Small=0x01030158,
+	style_Widget_DeviceDefault_CompoundButton_RadioButton=0x01030159,
+	style_Widget_DeviceDefault_ScrollView=0x0103015a,
+	style_Widget_DeviceDefault_HorizontalScrollView=0x0103015b,
+	style_Widget_DeviceDefault_Spinner=0x0103015c,
+	style_Widget_DeviceDefault_CompoundButton_Star=0x0103015d,
+	style_Widget_DeviceDefault_TabWidget=0x0103015e,
+	style_Widget_DeviceDefault_WebTextView=0x0103015f,
+	style_Widget_DeviceDefault_WebView=0x01030160,
+	style_Widget_DeviceDefault_DropDownItem=0x01030161,
+	style_Widget_DeviceDefault_DropDownItem_Spinner=0x01030162,
+	style_Widget_DeviceDefault_TextView_SpinnerItem=0x01030163,
+	style_Widget_DeviceDefault_ListPopupWindow=0x01030164,
+	style_Widget_DeviceDefault_PopupMenu=0x01030165,
+	style_Widget_DeviceDefault_ActionButton=0x01030166,
+	style_Widget_DeviceDefault_ActionButton_Overflow=0x01030167,
+	style_Widget_DeviceDefault_ActionButton_TextButton=0x01030168,
+	style_Widget_DeviceDefault_ActionMode=0x01030169,
+	style_Widget_DeviceDefault_ActionButton_CloseMode=0x0103016a,
+	style_Widget_DeviceDefault_ActionBar=0x0103016b,
+	style_Widget_DeviceDefault_Button_Borderless=0x0103016c,
+	style_Widget_DeviceDefault_Tab=0x0103016d,
+	style_Widget_DeviceDefault_CalendarView=0x0103016e,
+	style_Widget_DeviceDefault_DatePicker=0x0103016f,
+	style_Widget_DeviceDefault_ActionBar_TabView=0x01030170,
+	style_Widget_DeviceDefault_ActionBar_TabText=0x01030171,
+	style_Widget_DeviceDefault_ActionBar_TabBar=0x01030172,
+	style_Widget_DeviceDefault_ActionBar_Solid=0x01030173,
+	style_Widget_DeviceDefault_Light=0x01030174,
+	style_Widget_DeviceDefault_Light_Button=0x01030175,
+	style_Widget_DeviceDefault_Light_Button_Small=0x01030176,
+	style_Widget_DeviceDefault_Light_Button_Inset=0x01030177,
+	style_Widget_DeviceDefault_Light_Button_Toggle=0x01030178,
+	style_Widget_DeviceDefault_Light_Button_Borderless_Small=0x01030179,
+	style_Widget_DeviceDefault_Light_TextView=0x0103017a,
+	style_Widget_DeviceDefault_Light_AutoCompleteTextView=0x0103017b,
+	style_Widget_DeviceDefault_Light_CompoundButton_CheckBox=0x0103017c,
+	style_Widget_DeviceDefault_Light_ListView_DropDown=0x0103017d,
+	style_Widget_DeviceDefault_Light_EditText=0x0103017e,
+	style_Widget_DeviceDefault_Light_ExpandableListView=0x0103017f,
+	style_Widget_DeviceDefault_Light_GridView=0x01030180,
+	style_Widget_DeviceDefault_Light_ImageButton=0x01030181,
+	style_Widget_DeviceDefault_Light_ListView=0x01030182,
+	style_Widget_DeviceDefault_Light_PopupWindow=0x01030183,
+	style_Widget_DeviceDefault_Light_ProgressBar=0x01030184,
+	style_Widget_DeviceDefault_Light_ProgressBar_Horizontal=0x01030185,
+	style_Widget_DeviceDefault_Light_ProgressBar_Small=0x01030186,
+	style_Widget_DeviceDefault_Light_ProgressBar_Small_Title=0x01030187,
+	style_Widget_DeviceDefault_Light_ProgressBar_Large=0x01030188,
+	style_Widget_DeviceDefault_Light_ProgressBar_Inverse=0x01030189,
+	style_Widget_DeviceDefault_Light_ProgressBar_Small_Inverse=0x0103018a,
+	style_Widget_DeviceDefault_Light_ProgressBar_Large_Inverse=0x0103018b,
+	style_Widget_DeviceDefault_Light_SeekBar=0x0103018c,
+	style_Widget_DeviceDefault_Light_RatingBar=0x0103018d,
+	style_Widget_DeviceDefault_Light_RatingBar_Indicator=0x0103018e,
+	style_Widget_DeviceDefault_Light_RatingBar_Small=0x0103018f,
+	style_Widget_DeviceDefault_Light_CompoundButton_RadioButton=0x01030190,
+	style_Widget_DeviceDefault_Light_ScrollView=0x01030191,
+	style_Widget_DeviceDefault_Light_HorizontalScrollView=0x01030192,
+	style_Widget_DeviceDefault_Light_Spinner=0x01030193,
+	style_Widget_DeviceDefault_Light_CompoundButton_Star=0x01030194,
+	style_Widget_DeviceDefault_Light_TabWidget=0x01030195,
+	style_Widget_DeviceDefault_Light_WebTextView=0x01030196,
+	style_Widget_DeviceDefault_Light_WebView=0x01030197,
+	style_Widget_DeviceDefault_Light_DropDownItem=0x01030198,
+	style_Widget_DeviceDefault_Light_DropDownItem_Spinner=0x01030199,
+	style_Widget_DeviceDefault_Light_TextView_SpinnerItem=0x0103019a,
+	style_Widget_DeviceDefault_Light_ListPopupWindow=0x0103019b,
+	style_Widget_DeviceDefault_Light_PopupMenu=0x0103019c,
+	style_Widget_DeviceDefault_Light_Tab=0x0103019d,
+	style_Widget_DeviceDefault_Light_CalendarView=0x0103019e,
+	style_Widget_DeviceDefault_Light_ActionButton=0x0103019f,
+	style_Widget_DeviceDefault_Light_ActionButton_Overflow=0x010301a0,
+	style_Widget_DeviceDefault_Light_ActionMode=0x010301a1,
+	style_Widget_DeviceDefault_Light_ActionButton_CloseMode=0x010301a2,
+	style_Widget_DeviceDefault_Light_ActionBar=0x010301a3,
+	style_Widget_DeviceDefault_Light_ActionBar_TabView=0x010301a4,
+	style_Widget_DeviceDefault_Light_ActionBar_TabText=0x010301a5,
+	style_Widget_DeviceDefault_Light_ActionBar_TabBar=0x010301a6,
+	style_Widget_DeviceDefault_Light_ActionBar_Solid=0x010301a7,
+	style_Widget_DeviceDefault_Light_ActionBar_Solid_Inverse=0x010301a8,
+	style_Widget_DeviceDefault_Light_ActionBar_TabBar_Inverse=0x010301a9,
+	style_Widget_DeviceDefault_Light_ActionBar_TabView_Inverse=0x010301aa,
+	style_Widget_DeviceDefault_Light_ActionBar_TabText_Inverse=0x010301ab,
+	style_Widget_DeviceDefault_Light_ActionMode_Inverse=0x010301ac,
+	style_TextAppearance_DeviceDefault=0x010301ad,
+	style_TextAppearance_DeviceDefault_Inverse=0x010301ae,
+	style_TextAppearance_DeviceDefault_Large=0x010301af,
+	style_TextAppearance_DeviceDefault_Large_Inverse=0x010301b0,
+	style_TextAppearance_DeviceDefault_Medium=0x010301b1,
+	style_TextAppearance_DeviceDefault_Medium_Inverse=0x010301b2,
+	style_TextAppearance_DeviceDefault_Small=0x010301b3,
+	style_TextAppearance_DeviceDefault_Small_Inverse=0x010301b4,
+	style_TextAppearance_DeviceDefault_SearchResult_Title=0x010301b5,
+	style_TextAppearance_DeviceDefault_SearchResult_Subtitle=0x010301b6,
+	style_TextAppearance_DeviceDefault_WindowTitle=0x010301b7,
+	style_TextAppearance_DeviceDefault_DialogWindowTitle=0x010301b8,
+	style_TextAppearance_DeviceDefault_Widget=0x010301b9,
+	style_TextAppearance_DeviceDefault_Widget_Button=0x010301ba,
+	style_TextAppearance_DeviceDefault_Widget_IconMenu_Item=0x010301bb,
+	style_TextAppearance_DeviceDefault_Widget_TabWidget=0x010301bc,
+	style_TextAppearance_DeviceDefault_Widget_TextView=0x010301bd,
+	style_TextAppearance_DeviceDefault_Widget_TextView_PopupMenu=0x010301be,
+	style_TextAppearance_DeviceDefault_Widget_DropDownHint=0x010301bf,
+	style_TextAppearance_DeviceDefault_Widget_DropDownItem=0x010301c0,
+	style_TextAppearance_DeviceDefault_Widget_TextView_SpinnerItem=0x010301c1,
+	style_TextAppearance_DeviceDefault_Widget_EditText=0x010301c2,
+	style_TextAppearance_DeviceDefault_Widget_PopupMenu=0x010301c3,
+	style_TextAppearance_DeviceDefault_Widget_PopupMenu_Large=0x010301c4,
+	style_TextAppearance_DeviceDefault_Widget_PopupMenu_Small=0x010301c5,
+	style_TextAppearance_DeviceDefault_Widget_ActionBar_Title=0x010301c6,
+	style_TextAppearance_DeviceDefault_Widget_ActionBar_Subtitle=0x010301c7,
+	style_TextAppearance_DeviceDefault_Widget_ActionMode_Title=0x010301c8,
+	style_TextAppearance_DeviceDefault_Widget_ActionMode_Subtitle=0x010301c9,
+	style_TextAppearance_DeviceDefault_Widget_ActionBar_Title_Inverse=0x010301ca,
+	style_TextAppearance_DeviceDefault_Widget_ActionBar_Subtitle_Inverse=0x010301cb,
+	style_TextAppearance_DeviceDefault_Widget_ActionMode_Title_Inverse=0x010301cc,
+	style_TextAppearance_DeviceDefault_Widget_ActionMode_Subtitle_Inverse=0x010301cd,
+	style_TextAppearance_DeviceDefault_Widget_ActionBar_Menu=0x010301ce,
+	style_DeviceDefault_ButtonBar=0x010301cf,
+	style_DeviceDefault_ButtonBar_AlertDialog=0x010301d0,
+	style_DeviceDefault_SegmentedButton=0x010301d1,
+	style_DeviceDefault_Light_ButtonBar=0x010301d2,
+	style_DeviceDefault_Light_ButtonBar_AlertDialog=0x010301d3,
+	style_DeviceDefault_Light_SegmentedButton=0x010301d4,
+	integer_status_bar_notification_info_maxnum=0x010e0003,
+	string_status_bar_notification_info_overflow=0x01040017,
+	color_holo_blue_light=0x01060012,
+	color_holo_blue_dark=0x01060013,
+	color_holo_green_light=0x01060014,
+	color_holo_green_dark=0x01060015,
+	color_holo_red_light=0x01060016,
+	color_holo_red_dark=0x01060017,
+	color_holo_orange_light=0x01060018,
+	color_holo_orange_dark=0x01060019,
+	color_holo_purple=0x0106001a,
+	color_holo_blue_bright=0x0106001b,
+	attr_parentActivityName=0x010103a7,
+	attr_isolatedProcess=0x010103a9,
+	attr_importantForAccessibility=0x010103aa,
+	attr_keyboardLayout=0x010103ab,
+	attr_fontFamily=0x010103ac,
+	attr_mediaRouteButtonStyle=0x010103ad,
+	attr_mediaRouteTypes=0x010103ae,
+	style_Widget_Holo_MediaRouteButton=0x010301d5,
+	style_Widget_Holo_Light_MediaRouteButton=0x010301d6,
+	style_Widget_DeviceDefault_MediaRouteButton=0x010301d7,
+	style_Widget_DeviceDefault_Light_MediaRouteButton=0x010301d8,
+	attr_supportsRtl=0x010103af,
+	attr_textDirection=0x010103b0,
+	attr_textAlignment=0x010103b1,
+	attr_layoutDirection=0x010103b2,
+	attr_paddingStart=0x010103b3,
+	attr_paddingEnd=0x010103b4,
+	attr_layout_marginStart=0x010103b5,
+	attr_layout_marginEnd=0x010103b6,
+	attr_layout_toStartOf=0x010103b7,
+	attr_layout_toEndOf=0x010103b8,
+	attr_layout_alignStart=0x010103b9,
+	attr_layout_alignEnd=0x010103ba,
+	attr_layout_alignParentStart=0x010103bb,
+	attr_layout_alignParentEnd=0x010103bc,
+	attr_listPreferredItemPaddingStart=0x010103bd,
+	attr_listPreferredItemPaddingEnd=0x010103be,
+	attr_singleUser=0x010103bf,
+	attr_presentationTheme=0x010103c0,
+	attr_subtypeId=0x010103c1,
+	attr_initialKeyguardLayout=0x010103c2,
+	attr_widgetCategory=0x010103c4,
+	attr_permissionGroupFlags=0x010103c5,
+	attr_labelFor=0x010103c6,
+	attr_permissionFlags=0x010103c7,
+	attr_checkedTextViewStyle=0x010103c8,
+	attr_showOnLockScreen=0x010103c9,
+	attr_format12Hour=0x010103ca,
+	attr_format24Hour=0x010103cb,
+	attr_timeZone=0x010103cc,
+	style_Widget_Holo_CheckedTextView=0x010301d9,
+	style_Widget_Holo_Light_CheckedTextView=0x010301da,
+	style_Widget_DeviceDefault_CheckedTextView=0x010301db,
+	style_Widget_DeviceDefault_Light_CheckedTextView=0x010301dc,
+	attr_mipMap=0x010103cd,
+	attr_mirrorForRtl=0x010103ce,
+	attr_windowOverscan=0x010103cf,
+	attr_requiredForAllUsers=0x010103d0,
+	attr_indicatorStart=0x010103d1,
+	attr_indicatorEnd=0x010103d2,
+	attr_childIndicatorStart=0x010103d3,
+	attr_childIndicatorEnd=0x010103d4,
+	attr_restrictedAccountType=0x010103d5,
+	attr_requiredAccountType=0x010103d6,
+	attr_canRequestTouchExplorationMode=0x010103d7,
+	attr_canRequestEnhancedWebAccessibility=0x010103d8,
+	attr_canRequestFilterKeyEvents=0x010103d9,
+	attr_layoutMode=0x010103da,
+	style_Theme_Holo_NoActionBar_Overscan=0x010301dd,
+	style_Theme_Holo_Light_NoActionBar_Overscan=0x010301de,
+	style_Theme_DeviceDefault_NoActionBar_Overscan=0x010301df,
+	style_Theme_DeviceDefault_Light_NoActionBar_Overscan=0x010301e0,
+	attr_keySet=0x010103db,
+	attr_targetId=0x010103dc,
+	attr_fromScene=0x010103dd,
+	attr_toScene=0x010103de,
+	attr_transition=0x010103df,
+	attr_transitionOrdering=0x010103e0,
+	attr_fadingMode=0x010103e1,
+	attr_startDelay=0x010103e2,
+	attr_ssp=0x010103e3,
+	attr_sspPrefix=0x010103e4,
+	attr_sspPattern=0x010103e5,
+	attr_addPrintersActivity=0x010103e6,
+	attr_vendor=0x010103e7,
+	attr_category=0x010103e8,
+	attr_isAsciiCapable=0x010103e9,
+	attr_autoMirrored=0x010103ea,
+	attr_supportsSwitchingToNextInputMethod=0x010103eb,
+	attr_requireDeviceUnlock=0x010103ec,
+	attr_apduServiceBanner=0x010103ed,
+	attr_accessibilityLiveRegion=0x010103ee,
+	attr_windowTranslucentStatus=0x010103ef,
+	attr_windowTranslucentNavigation=0x010103f0,
+	attr_advancedPrintOptionsActivity=0x10103f1,
+	style_Theme_Holo_NoActionBar_TranslucentDecor=0x010301e1,
+	style_Theme_Holo_Light_NoActionBar_TranslucentDecor=0x010301e2,
+	style_Theme_DeviceDefault_NoActionBar_TranslucentDecor=0x010301e3,
+	style_Theme_DeviceDefault_Light_NoActionBar_TranslucentDecor=0x010301e4,
+	attr_banner=0x10103f2,
+	attr_windowSwipeToDismiss=0x10103f3,
+	attr_isGame=0x10103f4,
+	attr_allowEmbedded=0x10103f5,
+	attr_setupActivity=0x10103f6,
+	attr_fastScrollStyle=0x010103f7,
+	attr_windowContentTransitions=0x010103f8,
+	attr_windowContentTransitionManager=0x010103f9,
+	attr_translationZ=0x010103fa,
+	attr_tintMode=0x010103fb,
+	attr_controlX1=0x010103fc,
+	attr_controlY1=0x010103fd,
+	attr_controlX2=0x010103fe,
+	attr_controlY2=0x010103ff,
+	attr_transitionName=0x01010400,
+	attr_transitionGroup=0x01010401,
+	attr_viewportWidth=0x01010402,
+	attr_viewportHeight=0x01010403,
+	attr_fillColor=0x01010404,
+	attr_pathData=0x01010405,
+	attr_strokeColor=0x01010406,
+	attr_strokeWidth=0x01010407,
+	attr_trimPathStart=0x01010408,
+	attr_trimPathEnd=0x01010409,
+	attr_trimPathOffset=0x0101040a,
+	attr_strokeLineCap=0x0101040b,
+	attr_strokeLineJoin=0x0101040c,
+	attr_strokeMiterLimit=0x0101040d,
+	attr_colorControlNormal=0x01010429,
+	attr_colorControlActivated=0x0101042a,
+	attr_colorButtonNormal=0x0101042b,
+	attr_colorControlHighlight=0x0101042c,
+	attr_persistableMode=0x0101042d,
+	attr_titleTextAppearance=0x0101042e,
+	attr_subtitleTextAppearance=0x0101042f,
+	attr_slideEdge=0x01010430,
+	attr_actionBarTheme=0x01010431,
+	attr_textAppearanceListItemSecondary=0x01010432,
+	attr_colorPrimary=0x01010433,
+	attr_colorPrimaryDark=0x01010434,
+	attr_colorAccent=0x01010435,
+	attr_nestedScrollingEnabled=0x01010436,
+	attr_windowEnterTransition=0x01010437,
+	attr_windowExitTransition=0x01010438,
+	attr_windowSharedElementEnterTransition=0x01010439,
+	attr_windowSharedElementExitTransition=0x0101043a,
+	attr_windowAllowReturnTransitionOverlap=0x0101043b,
+	attr_windowAllowEnterTransitionOverlap=0x0101043c,
+	attr_sessionService=0x0101043d,
+	attr_stackViewStyle=0x0101043e,
+	attr_switchStyle=0x0101043f,
+	attr_elevation=0x01010440,
+	attr_excludeId=0x01010441,
+	attr_excludeClass=0x01010442,
+	attr_hideOnContentScroll=0x01010443,
+	attr_actionOverflowMenuStyle=0x01010444,
+	attr_documentLaunchMode=0x01010445,
+	attr_maxRecents=0x01010446,
+	attr_autoRemoveFromRecents=0x01010447,
+	attr_stateListAnimator=0x01010448,
+	attr_toId=0x01010449,
+	attr_fromId=0x0101044a,
+	attr_reversible=0x0101044b,
+	attr_splitTrack=0x0101044c,
+	attr_targetName=0x0101044d,
+	attr_excludeName=0x0101044e,
+	attr_matchOrder=0x0101044f,
+	attr_windowDrawsSystemBarBackgrounds=0x01010450,
+	attr_statusBarColor=0x01010451,
+	attr_navigationBarColor=0x01010452,
+	attr_contentInsetStart=0x01010453,
+	attr_contentInsetEnd=0x01010454,
+	attr_contentInsetLeft=0x01010455,
+	attr_contentInsetRight=0x01010456,
+	attr_paddingMode=0x01010457,
+	attr_layout_rowWeight=0x01010458,
+	attr_layout_columnWeight=0x01010459,
+	attr_translateX=0x0101045a,
+	attr_translateY=0x0101045b,
+	attr_selectableItemBackgroundBorderless=0x0101045c,
+	attr_elegantTextHeight=0x0101045d,
+	attr_searchKeyphraseId=0x0101045e,
+	attr_searchKeyphrase=0x0101045f,
+	attr_searchKeyphraseSupportedLocales=0x01010460,
+	attr_windowTransitionBackgroundFadeDuration=0x01010461,
+	attr_overlapAnchor=0x01010462,
+	attr_progressTint=0x01010463,
+	attr_progressTintMode=0x01010464,
+	attr_progressBackgroundTint=0x01010465,
+	attr_progressBackgroundTintMode=0x01010466,
+	attr_secondaryProgressTint=0x01010467,
+	attr_secondaryProgressTintMode=0x01010468,
+	attr_indeterminateTint=0x01010469,
+	attr_indeterminateTintMode=0x0101046a,
+	attr_backgroundTint=0x0101046b,
+	attr_backgroundTintMode=0x0101046c,
+	attr_foregroundTint=0x0101046d,
+	attr_foregroundTintMode=0x0101046e,
+	attr_buttonTint=0x0101046f,
+	attr_buttonTintMode=0x01010470,
+	attr_thumbTint=0x01010471,
+	attr_thumbTintMode=0x01010472,
+	attr_fullBackupOnly=0x01010473,
+	attr_propertyXName=0x01010474,
+	attr_propertyYName=0x01010475,
+	attr_relinquishTaskIdentity=0x01010476,
+	attr_tileModeX=0x01010477,
+	attr_tileModeY=0x01010478,
+	attr_actionModeShareDrawable=0x01010479,
+	attr_actionModeFindDrawable=0x0101047a,
+	attr_actionModeWebSearchDrawable=0x0101047b,
+	attr_transitionVisibilityMode=0x0101047c,
+	attr_minimumHorizontalAngle=0x0101047d,
+	attr_minimumVerticalAngle=0x0101047e,
+	attr_maximumAngle=0x0101047f,
+	attr_searchViewStyle=0x01010480,
+	attr_closeIcon=0x01010481,
+	attr_goIcon=0x01010482,
+	attr_searchIcon=0x01010483,
+	attr_voiceIcon=0x01010484,
+	attr_commitIcon=0x01010485,
+	attr_suggestionRowLayout=0x01010486,
+	attr_queryBackground=0x01010487,
+	attr_submitBackground=0x01010488,
+	attr_buttonBarPositiveButtonStyle=0x01010489,
+	attr_buttonBarNeutralButtonStyle=0x0101048a,
+	attr_buttonBarNegativeButtonStyle=0x0101048b,
+	attr_popupElevation=0x0101048c,
+	attr_actionBarPopupTheme=0x0101048d,
+	attr_multiArch=0x0101048e,
+	attr_touchscreenBlocksFocus=0x0101048f,
+	attr_windowElevation=0x01010490,
+	attr_launchTaskBehindTargetAnimation=0x01010491,
+	attr_launchTaskBehindSourceAnimation=0x01010492,
+	attr_restrictionType=0x01010493,
+	attr_dayOfWeekBackground=0x01010494,
+	attr_dayOfWeekTextAppearance=0x01010495,
+	attr_headerMonthTextAppearance=0x01010496,
+	attr_headerDayOfMonthTextAppearance=0x01010497,
+	attr_headerYearTextAppearance=0x01010498,
+	attr_yearListItemTextAppearance=0x01010499,
+	attr_yearListSelectorColor=0x0101049a,
+	attr_calendarTextColor=0x0101049b,
+	attr_recognitionService=0x0101049c,
+	attr_timePickerStyle=0x0101049d,
+	attr_timePickerDialogTheme=0x0101049e,
+	attr_headerTimeTextAppearance=0x0101049f,
+	attr_headerAmPmTextAppearance=0x010104a0,
+	attr_numbersTextColor=0x010104a1,
+	attr_numbersBackgroundColor=0x010104a2,
+	attr_numbersSelectorColor=0x010104a3,
+	attr_amPmTextColor=0x010104a4,
+	attr_amPmBackgroundColor=0x010104a5,
+	attr_searchKeyphraseRecognitionFlags=0x010104a6,
+	attr_checkMarkTint=0x010104a7,
+	attr_checkMarkTintMode=0x010104a8,
+	attr_popupTheme=0x010104a9,
+	attr_toolbarStyle=0x010104aa,
+	attr_windowClipToOutline=0x010104ab,
+	attr_datePickerDialogTheme=0x010104ac,
+	attr_showText=0x010104ad,
+	attr_windowReturnTransition=0x010104ae,
+	attr_windowReenterTransition=0x010104af,
+	attr_windowSharedElementReturnTransition=0x010104b0,
+	attr_windowSharedElementReenterTransition=0x010104b1,
+	attr_resumeWhilePausing=0x010104b2,
+	attr_datePickerMode=0x010104b3,
+	attr_timePickerMode=0x010104b4,
+	attr_inset=0x010104b5,
+	attr_letterSpacing=0x010104b6,
+	attr_fontFeatureSettings=0x010104b7,
+	attr_outlineProvider=0x010104b8,
+	attr_contentAgeHint=0x010104b9,
+	attr_country=0x010104ba,
+	attr_windowSharedElementsUseOverlay=0x010104bb,
+	attr_reparent=0x010104bc,
+	attr_reparentWithOverlay=0x010104bd,
+	attr_ambientShadowAlpha=0x010104be,
+	attr_spotShadowAlpha=0x010104bf,
+	attr_navigationIcon=0x010104c0,
+	attr_navigationContentDescription=0x010104c1,
+	attr_fragmentExitTransition=0x010104c2,
+	attr_fragmentEnterTransition=0x010104c3,
+	attr_fragmentSharedElementEnterTransition=0x010104c4,
+	attr_fragmentReturnTransition=0x010104c5,
+	attr_fragmentSharedElementReturnTransition=0x010104c6,
+	attr_fragmentReenterTransition=0x010104c7,
+	attr_fragmentAllowEnterTransitionOverlap=0x010104c8,
+	attr_fragmentAllowReturnTransitionOverlap=0x010104c9,
+	attr_patternPathData=0x010104ca,
+	attr_strokeAlpha=0x010104cb,
+	attr_fillAlpha=0x010104cc,
+	attr_windowActivityTransitions=0x010104cd,
+	attr_colorEdgeEffect=0x010104ce,
+	id_mask=0x0102002e,
+	id_statusBarBackground=0x0102002f,
+	id_navigationBarBackground=0x01020030,
+	style_Widget_FastScroll=0x010301e5,
+	style_Widget_StackView=0x010301e6,
+	style_Widget_Toolbar=0x010301e7,
+	style_Widget_Toolbar_Button_Navigation=0x010301e8,
+	style_Widget_DeviceDefault_FastScroll=0x010301e9,
+	style_Widget_DeviceDefault_StackView=0x010301ea,
+	style_Widget_DeviceDefault_Light_FastScroll=0x010301eb,
+	style_Widget_DeviceDefault_Light_StackView=0x010301ec,
+	style_TextAppearance_Material=0x010301ed,
+	style_TextAppearance_Material_Button=0x010301ee,
+	style_TextAppearance_Material_Body2=0x010301ef,
+	style_TextAppearance_Material_Body1=0x010301f0,
+	style_TextAppearance_Material_Caption=0x010301f1,
+	style_TextAppearance_Material_DialogWindowTitle=0x010301f2,
+	style_TextAppearance_Material_Display4=0x010301f3,
+	style_TextAppearance_Material_Display3=0x010301f4,
+	style_TextAppearance_Material_Display2=0x010301f5,
+	style_TextAppearance_Material_Display1=0x010301f6,
+	style_TextAppearance_Material_Headline=0x010301f7,
+	style_TextAppearance_Material_Inverse=0x010301f8,
+	style_TextAppearance_Material_Large=0x010301f9,
+	style_TextAppearance_Material_Large_Inverse=0x010301fa,
+	style_TextAppearance_Material_Medium=0x010301fb,
+	style_TextAppearance_Material_Medium_Inverse=0x010301fc,
+	style_TextAppearance_Material_Menu=0x010301fd,
+	style_TextAppearance_Material_Notification=0x010301fe,
+	style_TextAppearance_Material_Notification_Emphasis=0x010301ff,
+	style_TextAppearance_Material_Notification_Info=0x01030200,
+	style_TextAppearance_Material_Notification_Line2=0x01030201,
+	style_TextAppearance_Material_Notification_Time=0x01030202,
+	style_TextAppearance_Material_Notification_Title=0x01030203,
+	style_TextAppearance_Material_SearchResult_Subtitle=0x01030204,
+	style_TextAppearance_Material_SearchResult_Title=0x01030205,
+	style_TextAppearance_Material_Small=0x01030206,
+	style_TextAppearance_Material_Small_Inverse=0x01030207,
+	style_TextAppearance_Material_Subhead=0x01030208,
+	style_TextAppearance_Material_Title=0x01030209,
+	style_TextAppearance_Material_WindowTitle=0x0103020a,
+	style_TextAppearance_Material_Widget=0x0103020b,
+	style_TextAppearance_Material_Widget_ActionBar_Menu=0x0103020c,
+	style_TextAppearance_Material_Widget_ActionBar_Subtitle=0x0103020d,
+	style_TextAppearance_Material_Widget_ActionBar_Subtitle_Inverse=0x0103020e,
+	style_TextAppearance_Material_Widget_ActionBar_Title=0x0103020f,
+	style_TextAppearance_Material_Widget_ActionBar_Title_Inverse=0x01030210,
+	style_TextAppearance_Material_Widget_ActionMode_Subtitle=0x01030211,
+	style_TextAppearance_Material_Widget_ActionMode_Subtitle_Inverse=0x01030212,
+	style_TextAppearance_Material_Widget_ActionMode_Title=0x01030213,
+	style_TextAppearance_Material_Widget_ActionMode_Title_Inverse=0x01030214,
+	style_TextAppearance_Material_Widget_Button=0x01030215,
+	style_TextAppearance_Material_Widget_DropDownHint=0x01030216,
+	style_TextAppearance_Material_Widget_DropDownItem=0x01030217,
+	style_TextAppearance_Material_Widget_EditText=0x01030218,
+	style_TextAppearance_Material_Widget_IconMenu_Item=0x01030219,
+	style_TextAppearance_Material_Widget_PopupMenu=0x0103021a,
+	style_TextAppearance_Material_Widget_PopupMenu_Large=0x0103021b,
+	style_TextAppearance_Material_Widget_PopupMenu_Small=0x0103021c,
+	style_TextAppearance_Material_Widget_TabWidget=0x0103021d,
+	style_TextAppearance_Material_Widget_TextView=0x0103021e,
+	style_TextAppearance_Material_Widget_TextView_PopupMenu=0x0103021f,
+	style_TextAppearance_Material_Widget_TextView_SpinnerItem=0x01030220,
+	style_TextAppearance_Material_Widget_Toolbar_Subtitle=0x01030221,
+	style_TextAppearance_Material_Widget_Toolbar_Title=0x01030222,
+	style_Theme_DeviceDefault_Settings=0x01030223,
+	style_Theme_Material=0x01030224,
+	style_Theme_Material_Dialog=0x01030225,
+	style_Theme_Material_Dialog_Alert=0x01030226,
+	style_Theme_Material_Dialog_MinWidth=0x01030227,
+	style_Theme_Material_Dialog_NoActionBar=0x01030228,
+	style_Theme_Material_Dialog_NoActionBar_MinWidth=0x01030229,
+	style_Theme_Material_Dialog_Presentation=0x0103022a,
+	style_Theme_Material_DialogWhenLarge=0x0103022b,
+	style_Theme_Material_DialogWhenLarge_NoActionBar=0x0103022c,
+	style_Theme_Material_InputMethod=0x0103022d,
+	style_Theme_Material_NoActionBar=0x0103022e,
+	style_Theme_Material_NoActionBar_Fullscreen=0x0103022f,
+	style_Theme_Material_NoActionBar_Overscan=0x01030230,
+	style_Theme_Material_NoActionBar_TranslucentDecor=0x01030231,
+	style_Theme_Material_Panel=0x01030232,
+	style_Theme_Material_Settings=0x01030233,
+	style_Theme_Material_Voice=0x01030234,
+	style_Theme_Material_Wallpaper=0x01030235,
+	style_Theme_Material_Wallpaper_NoTitleBar=0x01030236,
+	style_Theme_Material_Light=0x01030237,
+	style_Theme_Material_Light_DarkActionBar=0x01030238,
+	style_Theme_Material_Light_Dialog=0x01030239,
+	style_Theme_Material_Light_Dialog_Alert=0x0103023a,
+	style_Theme_Material_Light_Dialog_MinWidth=0x0103023b,
+	style_Theme_Material_Light_Dialog_NoActionBar=0x0103023c,
+	style_Theme_Material_Light_Dialog_NoActionBar_MinWidth=0x0103023d,
+	style_Theme_Material_Light_Dialog_Presentation=0x0103023e,
+	style_Theme_Material_Light_DialogWhenLarge=0x0103023f,
+	style_Theme_Material_Light_DialogWhenLarge_NoActionBar=0x01030240,
+	style_Theme_Material_Light_NoActionBar=0x01030241,
+	style_Theme_Material_Light_NoActionBar_Fullscreen=0x01030242,
+	style_Theme_Material_Light_NoActionBar_Overscan=0x01030243,
+	style_Theme_Material_Light_NoActionBar_TranslucentDecor=0x01030244,
+	style_Theme_Material_Light_Panel=0x01030245,
+	style_Theme_Material_Light_Voice=0x01030246,
+	style_ThemeOverlay=0x01030247,
+	style_ThemeOverlay_Material=0x01030248,
+	style_ThemeOverlay_Material_ActionBar=0x01030249,
+	style_ThemeOverlay_Material_Light=0x0103024a,
+	style_ThemeOverlay_Material_Dark=0x0103024b,
+	style_ThemeOverlay_Material_Dark_ActionBar=0x0103024c,
+	style_Widget_Material=0x0103024d,
+	style_Widget_Material_ActionBar=0x0103024e,
+	style_Widget_Material_ActionBar_Solid=0x0103024f,
+	style_Widget_Material_ActionBar_TabBar=0x01030250,
+	style_Widget_Material_ActionBar_TabText=0x01030251,
+	style_Widget_Material_ActionBar_TabView=0x01030252,
+	style_Widget_Material_ActionButton=0x01030253,
+	style_Widget_Material_ActionButton_CloseMode=0x01030254,
+	style_Widget_Material_ActionButton_Overflow=0x01030255,
+	style_Widget_Material_ActionMode=0x01030256,
+	style_Widget_Material_AutoCompleteTextView=0x01030257,
+	style_Widget_Material_Button=0x01030258,
+	style_Widget_Material_Button_Borderless=0x01030259,
+	style_Widget_Material_Button_Borderless_Colored=0x0103025a,
+	style_Widget_Material_Button_Borderless_Small=0x0103025b,
+	style_Widget_Material_Button_Inset=0x0103025c,
+	style_Widget_Material_Button_Small=0x0103025d,
+	style_Widget_Material_Button_Toggle=0x0103025e,
+	style_Widget_Material_ButtonBar=0x0103025f,
+	style_Widget_Material_ButtonBar_AlertDialog=0x01030260,
+	style_Widget_Material_CalendarView=0x01030261,
+	style_Widget_Material_CheckedTextView=0x01030262,
+	style_Widget_Material_CompoundButton_CheckBox=0x01030263,
+	style_Widget_Material_CompoundButton_RadioButton=0x01030264,
+	style_Widget_Material_CompoundButton_Star=0x01030265,
+	style_Widget_Material_DatePicker=0x01030266,
+	style_Widget_Material_DropDownItem=0x01030267,
+	style_Widget_Material_DropDownItem_Spinner=0x01030268,
+	style_Widget_Material_EditText=0x01030269,
+	style_Widget_Material_ExpandableListView=0x0103026a,
+	style_Widget_Material_FastScroll=0x0103026b,
+	style_Widget_Material_GridView=0x0103026c,
+	style_Widget_Material_HorizontalScrollView=0x0103026d,
+	style_Widget_Material_ImageButton=0x0103026e,
+	style_Widget_Material_ListPopupWindow=0x0103026f,
+	style_Widget_Material_ListView=0x01030270,
+	style_Widget_Material_ListView_DropDown=0x01030271,
+	style_Widget_Material_MediaRouteButton=0x01030272,
+	style_Widget_Material_PopupMenu=0x01030273,
+	style_Widget_Material_PopupMenu_Overflow=0x01030274,
+	style_Widget_Material_PopupWindow=0x01030275,
+	style_Widget_Material_ProgressBar=0x01030276,
+	style_Widget_Material_ProgressBar_Horizontal=0x01030277,
+	style_Widget_Material_ProgressBar_Large=0x01030278,
+	style_Widget_Material_ProgressBar_Small=0x01030279,
+	style_Widget_Material_ProgressBar_Small_Title=0x0103027a,
+	style_Widget_Material_RatingBar=0x0103027b,
+	style_Widget_Material_RatingBar_Indicator=0x0103027c,
+	style_Widget_Material_RatingBar_Small=0x0103027d,
+	style_Widget_Material_ScrollView=0x0103027e,
+	style_Widget_Material_SearchView=0x0103027f,
+	style_Widget_Material_SeekBar=0x01030280,
+	style_Widget_Material_SegmentedButton=0x01030281,
+	style_Widget_Material_StackView=0x01030282,
+	style_Widget_Material_Spinner=0x01030283,
+	style_Widget_Material_Spinner_Underlined=0x01030284,
+	style_Widget_Material_Tab=0x01030285,
+	style_Widget_Material_TabWidget=0x01030286,
+	style_Widget_Material_TextView=0x01030287,
+	style_Widget_Material_TextView_SpinnerItem=0x01030288,
+	style_Widget_Material_TimePicker=0x01030289,
+	style_Widget_Material_Toolbar=0x0103028a,
+	style_Widget_Material_Toolbar_Button_Navigation=0x0103028b,
+	style_Widget_Material_WebTextView=0x0103028c,
+	style_Widget_Material_WebView=0x0103028d,
+	style_Widget_Material_Light=0x0103028e,
+	style_Widget_Material_Light_ActionBar=0x0103028f,
+	style_Widget_Material_Light_ActionBar_Solid=0x01030290,
+	style_Widget_Material_Light_ActionBar_TabBar=0x01030291,
+	style_Widget_Material_Light_ActionBar_TabText=0x01030292,
+	style_Widget_Material_Light_ActionBar_TabView=0x01030293,
+	style_Widget_Material_Light_ActionButton=0x01030294,
+	style_Widget_Material_Light_ActionButton_CloseMode=0x01030295,
+	style_Widget_Material_Light_ActionButton_Overflow=0x01030296,
+	style_Widget_Material_Light_ActionMode=0x01030297,
+	style_Widget_Material_Light_AutoCompleteTextView=0x01030298,
+	style_Widget_Material_Light_Button=0x01030299,
+	style_Widget_Material_Light_Button_Borderless=0x0103029a,
+	style_Widget_Material_Light_Button_Borderless_Colored=0x0103029b,
+	style_Widget_Material_Light_Button_Borderless_Small=0x0103029c,
+	style_Widget_Material_Light_Button_Inset=0x0103029d,
+	style_Widget_Material_Light_Button_Small=0x0103029e,
+	style_Widget_Material_Light_Button_Toggle=0x0103029f,
+	style_Widget_Material_Light_ButtonBar=0x010302a0,
+	style_Widget_Material_Light_ButtonBar_AlertDialog=0x010302a1,
+	style_Widget_Material_Light_CalendarView=0x010302a2,
+	style_Widget_Material_Light_CheckedTextView=0x010302a3,
+	style_Widget_Material_Light_CompoundButton_CheckBox=0x010302a4,
+	style_Widget_Material_Light_CompoundButton_RadioButton=0x010302a5,
+	style_Widget_Material_Light_CompoundButton_Star=0x010302a6,
+	style_Widget_Material_Light_DatePicker=0x010302a7,
+	style_Widget_Material_Light_DropDownItem=0x010302a8,
+	style_Widget_Material_Light_DropDownItem_Spinner=0x010302a9,
+	style_Widget_Material_Light_EditText=0x010302aa,
+	style_Widget_Material_Light_ExpandableListView=0x010302ab,
+	style_Widget_Material_Light_FastScroll=0x010302ac,
+	style_Widget_Material_Light_GridView=0x010302ad,
+	style_Widget_Material_Light_HorizontalScrollView=0x010302ae,
+	style_Widget_Material_Light_ImageButton=0x010302af,
+	style_Widget_Material_Light_ListPopupWindow=0x010302b0,
+	style_Widget_Material_Light_ListView=0x010302b1,
+	style_Widget_Material_Light_ListView_DropDown=0x010302b2,
+	style_Widget_Material_Light_MediaRouteButton=0x010302b3,
+	style_Widget_Material_Light_PopupMenu=0x010302b4,
+	style_Widget_Material_Light_PopupMenu_Overflow=0x010302b5,
+	style_Widget_Material_Light_PopupWindow=0x010302b6,
+	style_Widget_Material_Light_ProgressBar=0x010302b7,
+	style_Widget_Material_Light_ProgressBar_Horizontal=0x010302b8,
+	style_Widget_Material_Light_ProgressBar_Inverse=0x010302b9,
+	style_Widget_Material_Light_ProgressBar_Large=0x010302ba,
+	style_Widget_Material_Light_ProgressBar_Large_Inverse=0x010302bb,
+	style_Widget_Material_Light_ProgressBar_Small=0x010302bc,
+	style_Widget_Material_Light_ProgressBar_Small_Inverse=0x010302bd,
+	style_Widget_Material_Light_ProgressBar_Small_Title=0x010302be,
+	style_Widget_Material_Light_RatingBar=0x010302bf,
+	style_Widget_Material_Light_RatingBar_Indicator=0x010302c0,
+	style_Widget_Material_Light_RatingBar_Small=0x010302c1,
+	style_Widget_Material_Light_ScrollView=0x010302c2,
+	style_Widget_Material_Light_SearchView=0x010302c3,
+	style_Widget_Material_Light_SeekBar=0x010302c4,
+	style_Widget_Material_Light_SegmentedButton=0x010302c5,
+	style_Widget_Material_Light_StackView=0x010302c6,
+	style_Widget_Material_Light_Spinner=0x010302c7,
+	style_Widget_Material_Light_Spinner_Underlined=0x010302c8,
+	style_Widget_Material_Light_Tab=0x010302c9,
+	style_Widget_Material_Light_TabWidget=0x010302ca,
+	style_Widget_Material_Light_TextView=0x010302cb,
+	style_Widget_Material_Light_TextView_SpinnerItem=0x010302cc,
+	style_Widget_Material_Light_TimePicker=0x010302cd,
+	style_Widget_Material_Light_WebTextView=0x010302ce,
+	style_Widget_Material_Light_WebView=0x010302cf,
+	style_Theme_Leanback_FormWizard=0x010302d0,
+	array_config_keySystemUuidMapping=0x01070005,
+	interpolator_fast_out_slow_in=0x010c000d,
+	interpolator_linear_out_slow_in=0x010c000e,
+	interpolator_fast_out_linear_in=0x010c000f,
+	transition_no_transition=0x010f0000,
+	transition_move=0x010f0001,
+	transition_fade=0x010f0002,
+	transition_explode=0x010f0003,
+	transition_slide_bottom=0x010f0004,
+	transition_slide_top=0x010f0005,
+	transition_slide_right=0x010f0006,
+	transition_slide_left=0x010f0007,
+	raw_loaderror=0x01100000,
+	raw_nodomain=0x01100001,
+	attr_resizeClip=0x010104cf,
+	attr_collapseContentDescription=0x010104d0,
+	attr_accessibilityTraversalBefore=0x010104d1,
+	attr_accessibilityTraversalAfter=0x010104d2,
+	attr_dialogPreferredPadding=0x010104d3,
+	attr_searchHintIcon=0x010104d4,
+	attr_trackTint=0x010104d9,
+	attr_trackTintMode=0x010104da,
+	attr_start=0x010104db,
+	attr_end=0x010104dc,
+	attr_breakStrategy=0x010104dd,
+	attr_hyphenationFrequency=0x010104de,
+	attr_allowUndo=0x010104df,
+	attr_windowLightStatusBar=0x010104e0,
+	attr_numbersInnerTextColor=0x010104e1,
+	attr_colorBackgroundFloating=0x010104e2,
+	attr_titleTextColor=0x010104e3,
+	attr_subtitleTextColor=0x010104e4,
+	attr_thumbPosition=0x010104e5,
+	attr_scrollIndicators=0x010104e6,
+	attr_contextClickable=0x010104e7,
+	attr_fingerprintAuthDrawable=0x010104e8,
+	attr_logoDescription=0x010104e9,
+	attr_extractNativeLibs=0x010104ea,
+	attr_fullBackupContent=0x010104eb,
+	attr_usesCleartextTraffic=0x010104ec,
+	attr_lockTaskMode=0x010104ed,
+	attr_autoVerify=0x010104ee,
+	attr_showForAllUsers=0x010104ef,
+	attr_supportsAssist=0x010104f0,
+	attr_supportsLaunchVoiceAssistFromKeyguard=0x010104f1,
+	style_Widget_Material_Button_Colored=0x010302d3,
+	style_TextAppearance_Material_Widget_Button_Inverse=0x010302d4,
+	style_Theme_Material_Light_LightStatusBar=0x010302d5,
+	style_ThemeOverlay_Material_Dialog=0x010302d6,
+	style_ThemeOverlay_Material_Dialog_Alert=0x010302d7,
+	id_pasteAsPlainText=0x01020031,
+	id_undo=0x01020032,
+	id_redo=0x01020033,
+	id_replaceText=0x01020034,
+	id_shareText=0x01020035,
+	id_accessibilityActionShowOnScreen=0x01020036,
+	id_accessibilityActionScrollToPosition=0x01020037,
+	id_accessibilityActionScrollUp=0x01020038,
+	id_accessibilityActionScrollLeft=0x01020039,
+	id_accessibilityActionScrollDown=0x0102003a,
+	id_accessibilityActionScrollRight=0x0102003b,
+	id_accessibilityActionContextClick=0x0102003c,
+} PUBLIC_RESOURCE_ID;
+
+
+typedef enum <ushort>
+{
+    RES_NULL_TYPE               = 0x0000,
+    RES_STRING_POOL_TYPE        = 0x0001,
+    RES_TABLE_TYPE              = 0x0002,
+    RES_XML_TYPE                = 0x0003,
+    // Chunk types in RES_XML_TYPE
+    RES_XML_FIRST_CHUNK_TYPE    = 0x0100,
+    RES_XML_START_NAMESPACE_TYPE= 0x0100,
+    RES_XML_END_NAMESPACE_TYPE  = 0x0101,
+    RES_XML_START_ELEMENT_TYPE  = 0x0102,
+    RES_XML_END_ELEMENT_TYPE    = 0x0103,
+    RES_XML_CDATA_TYPE          = 0x0104,
+    RES_XML_LAST_CHUNK_TYPE     = 0x017f,
+    // This contains a uint32_t array mapping strings in the string
+    // pool back to resource identifiers.  It is optional.
+    RES_XML_RESOURCE_MAP_TYPE   = 0x0180,
+    // Chunk types in RES_TABLE_TYPE
+    RES_TABLE_PACKAGE_TYPE      = 0x0200,
+    RES_TABLE_TYPE_TYPE         = 0x0201,
+    RES_TABLE_TYPE_SPEC_TYPE    = 0x0202,
+    RES_TABLE_LIBRARY_TYPE      = 0x0203
+} RES_TYPE;
+
+typedef struct 
+{
+    RES_TYPE type<comment="Type identifier for this chunk">;
+    ushort headerSize<comment="Size of the chunk header (in bytes)">;
+    uint size<comment="Total size of this chunk (in bytes)">;
+} ResChunk_header;
+
+enum 
+{
+	SORTED_FLAG = 1<<0,//If set, the string index is sorted by the string values (based on strcmp16()).
+	UTF8_FLAG = 1<<8// String pool is encoded in UTF-8
+};
+
+typedef struct 
+{
+    struct ResChunk_header header;
+    uint stringCount<comment="Number of strings in this pool">;//  (number of uint32_t indices that follow in the data).
+    uint styleCount<comment="Number of style span arrays in the pool">;// (number of uint32_t indices follow the string indices).
+    uint flags<comment="Flags">;
+    uint stringsStart<comment="Index from header of the string data">;
+    uint stylesStart<comment="Index from header of the style data">;
+} ResStringPool_header;
+
+typedef struct 
+{
+    uint index<comment="Index into the string pool table">;
+} ResStringPool_ref<read=readString>;
+
+string readString(ResStringPool_ref& m)
+{
+	return getString(m.index);
+}
+
+typedef struct 
+{
+    enum 
+	{
+        END = 0xFFFFFFFF
+    };
+    ResStringPool_ref name<comment="This is the name of the span">;
+    uint firstChar<comment="The range of characters in the string that this span applies to">;
+	uint lastChar;
+} ResStringPool_span;
+
+struct StringPoolType(int begin)
+{
+    FSeek(begin);
+	ResStringPool_header header;
+	if(header.stringCount > 0)
+		uint stringoffsets[header.stringCount];
+	if(header.styleCount > 0)
+		uint styleoffsets[header.styleCount];
+	FSeek(begin+header.stringsStart);
+	local int curpos = begin + header.stringsStart;
+	local int i = 0;
+	local uchar isUTF8 = (header.flags & UTF8_FLAG) != 0;
+	for(i=0;i<header.stringCount;i++)
+	{
+		FSeek(curpos + stringoffsets[i]);
+		typedef struct 
+		{
+			if(isUTF8 == 0)
+			{//utf16字符串长度|utf16数据
+				ushort u16len;
+				if((u16len & 0x8000) == 0)
+				{
+					wchar_t content[u16len + 1];
+				}
+				else
+				{
+					ushort u16len_fix;
+					wchar_t content[(((u16len & 0x7FFF) << 16) | u16len_fix) + 1];	//real length
+				}
+			}
+			else
+			{//utf16字符串长度|utf8字符串长度|utf8数据
+				uchar u16len;
+				if((u16len & 0x80) == 0)
+				{
+					uchar u8len;
+					if((u8len & 0x80) == 0)
+					{
+						char content[u8len + 1];
+					}
+					else
+					{
+						uchar u8len_fix;
+						char content[(((u8len & 0x7F) << 8) | u8len_fix) + 1];
+					}
+				}
+				else
+				{
+					uchar u16len_fix;
+					uchar u8len;
+					if((u8len & 0x80) == 0)
+					{
+						char content[u8len + 1];
+					}
+					else
+					{
+						uchar u8len_fix;
+						char content[(((u8len & 0x7F) << 8) | u8len_fix) + 1];
+					}
+				}
+			}
+		} ResStringPool_string <read=ReadResStringPool_string>;
+        ResStringPool_string strdata;
+	}
+	curpos = begin + header.stylesStart;
+	for(i=0;i<header.styleCount;i++)
+	{
+		FSeek(curpos + styleoffsets[i]);
+		ResStringPool_span styledata;
+	}
+};
+
+wstring ReadResStringPool_string( ResStringPool_string &str )
+{
+    return str.content;
+}
+
+typedef struct 
+{
+	ResChunk_header header;
+	PUBLIC_RESOURCE_ID resids[(header.size - header.headerSize) / 4];
+} XmlResourceMapType;
+
+typedef struct 
+{
+    ResStringPool_ref prefix<comment="The prefix of the namespace">;
+    ResStringPool_ref uri<comment="The URI of the namespace">;
+} ResXMLTree_namespaceExt;
+
+string getString(int id)
+{
+	if(id <= -1 || id >= strPool.header.stringCount)
+		return "";
+	if(pooltype == -1)
+		return strPool.strdata[id].content;
+	else if(pooltype == 0)
+		return tablePackage.keyStrings.strdata[id].content;
+	else
+		return tablePackage[pooltype].keyStrings.strdata[id].content;
+}
+
+typedef struct 
+{
+    struct ResChunk_header header;
+    uint lineNumber<comment="Line number in original source file at which this element appeared">;
+    uint comment<comment="Optional XML comment that was associated with this element; -1 if none">;
+} ResXMLTree_node;
+
+typedef struct 
+{
+	ResXMLTree_node header;
+	ResXMLTree_namespaceExt ext;
+} NamespaceType <read=NamespaceTypeRead>;
+
+string NamespaceTypeRead(NamespaceType& m)
+{
+	string s;
+	SPrintf(s,"<manifest xmlns:%s=\"%s\">",getString(m.ext.prefix.index),getString(m.ext.uri.index));
+	return s;
+}
+
+typedef struct
+{
+    ResStringPool_ref ns<comment="String of the full namespace of this element">;
+    ResStringPool_ref name<comment="String name of this node if it is an ELEMENT, the raw character data if this is a CDATA node">;
+    ushort attributeStart<comment="Byte offset from the start of this structure where the attributes start">;
+    ushort attributeSize<comment="Size of the ResXMLTree_attribute structures that follow">;
+    ushort attributeCount<comment="Number of attributes associated with an ELEMENT">;
+    ushort idIndex<comment="Index (1-based) of the id attribute. 0 if none">;
+    ushort classIndex<comment="Index (1-based) of the class attribute. 0 if none">;
+    ushort styleIndex<comment="Index (1-based) of the style attribute. 0 if none">;
+} ResXMLTree_attrExt;
+
+typedef struct 
+{
+    ushort size<comment="Number of bytes in this structure">;
+    uchar res0<comment="Always set to 0">;     
+    typedef enum<uchar>
+	{
+        // The 'data' is either 0 or 1, specifying this resource is either
+        // undefined or empty, respectively.
+        TYPE_NULL = 0x00,
+        // The 'data' holds a ResTable_ref, a reference to another resource
+        // table entry.
+        TYPE_REFERENCE = 0x01,
+        // The 'data' holds an attribute resource identifier.
+        TYPE_ATTRIBUTE = 0x02,
+        // The 'data' holds an index into the containing resource table's
+        // global value string pool.
+        TYPE_STRING = 0x03,
+        // The 'data' holds a single-precision floating point number.
+        TYPE_FLOAT = 0x04,
+        // The 'data' holds a complex number encoding a dimension value,
+        // such as "100in".
+        TYPE_DIMENSION = 0x05,
+        // The 'data' holds a complex number encoding a fraction of a
+        // container.
+        TYPE_FRACTION = 0x06,
+        // The 'data' holds a dynamic ResTable_ref, which needs to be
+        // resolved before it can be used like a TYPE_REFERENCE.
+        TYPE_DYNAMIC_REFERENCE = 0x07,
+        // Beginning of integer flavors...
+        TYPE_FIRST_INT = 0x10,
+        // The 'data' is a raw integer value of the form n..n.
+        TYPE_INT_DEC = 0x10,
+        // The 'data' is a raw integer value of the form 0xn..n.
+        TYPE_INT_HEX = 0x11,
+        // The 'data' is either 0 or 1, for input "false" or "true" respectively.
+        TYPE_INT_BOOLEAN = 0x12,
+        // Beginning of color integer flavors...
+        TYPE_FIRST_COLOR_INT = 0x1c,
+        // The 'data' is a raw integer value of the form #aarrggbb.
+        TYPE_INT_COLOR_ARGB8 = 0x1c,
+        // The 'data' is a raw integer value of the form #rrggbb.
+        TYPE_INT_COLOR_RGB8 = 0x1d,
+        // The 'data' is a raw integer value of the form #argb.
+        TYPE_INT_COLOR_ARGB4 = 0x1e,
+        // The 'data' is a raw integer value of the form #rgb.
+        TYPE_INT_COLOR_RGB4 = 0x1f,
+        // ...end of integer flavors.
+        TYPE_LAST_COLOR_INT = 0x1f,
+        // ...end of integer flavors.
+        TYPE_LAST_INT = 0x1f
+    } _DataType;
+    _DataType dataType<comment="Type of the data value">;
+
+    // Structure of complex data values (TYPE_UNIT and TYPE_FRACTION)
+    typedef enum 
+	{
+        // Where the unit type information is.  This gives us 16 possible
+        // types, as defined below.
+        COMPLEX_UNIT_SHIFT = 0,
+        COMPLEX_UNIT_MASK = 0xf,
+        // TYPE_DIMENSION: Value is raw pixels.
+        COMPLEX_UNIT_PX = 0,
+        // TYPE_DIMENSION: Value is Device Independent Pixels.
+        COMPLEX_UNIT_DIP = 1,
+        // TYPE_DIMENSION: Value is a Scaled device independent Pixels.
+        COMPLEX_UNIT_SP = 2,
+        // TYPE_DIMENSION: Value is in points.
+        COMPLEX_UNIT_PT = 3,
+        // TYPE_DIMENSION: Value is in inches.
+        COMPLEX_UNIT_IN = 4,
+        // TYPE_DIMENSION: Value is in millimeters.
+        COMPLEX_UNIT_MM = 5,
+        // TYPE_FRACTION: A basic fraction of the overall size.
+        COMPLEX_UNIT_FRACTION = 0,
+        // TYPE_FRACTION: A fraction of the parent size.
+        COMPLEX_UNIT_FRACTION_PARENT = 1,
+        // Where the radix information is, telling where the decimal place
+        // appears in the mantissa.  This give us 4 possible fixed point
+        // representations as defined below.
+        COMPLEX_RADIX_SHIFT = 4,
+        COMPLEX_RADIX_MASK = 0x3,
+        // The mantissa is an integral number -- i.e., 0xnnnnnn.0
+        COMPLEX_RADIX_23p0 = 0,
+        // The mantissa magnitude is 16 bits -- i.e, 0xnnnn.nn
+        COMPLEX_RADIX_16p7 = 1,
+        // The mantissa magnitude is 8 bits -- i.e, 0xnn.nnnn
+        COMPLEX_RADIX_8p15 = 2,
+        // The mantissa magnitude is 0 bits -- i.e, 0x0.nnnnnn
+        COMPLEX_RADIX_0p23 = 3,
+        // Where the actual value is.  This gives us 23 bits of
+        // precision.  The top bit is the sign.
+        COMPLEX_MANTISSA_SHIFT = 8,
+        COMPLEX_MANTISSA_MASK = 0xffffff
+    }_ComplexDataType;
+
+    // Possible data values for TYPE_NULL.
+    enum 
+	{
+        DATA_NULL_UNDEFINED = 0,// The value is not defined.
+        DATA_NULL_EMPTY = 1// The value is explicitly defined as empty.
+    };
+
+    // The data for this item, as interpreted according to dataType.
+    typedef uint data_type;
+    data_type data;
+} Res_value <read=ResvalueRead>;
+
+string ResvalueRead(Res_value &val)
+{
+    if (val.dataType == TYPE_STRING)
+        return getString(val.data);
+    else 
+        return "";
+}
+
+typedef struct 
+{
+    struct ResStringPool_ref ns<comment="Namespace of this attribute">;
+    struct ResStringPool_ref name<comment="Name of this attribute">;
+    struct ResStringPool_ref rawValue<comment="The original raw string value of this attribute">;
+    struct Res_value typedValue<comment="Processesd typed value of this attribute">;
+} ResXMLTree_attribute;
+
+typedef struct(int layer)
+{
+	local int locallayer = layer;
+	ResXMLTree_node header;
+	local int pos = FTell();
+	ResXMLTree_attrExt attrExt;
+	if(attrExt.attributeCount)
+	{
+		local int i=0;
+		for(i=0;i<attrExt.attributeCount;i++)
+		{
+			FSeek(pos + attrExt.attributeStart + attrExt.attributeSize*i);
+			ResXMLTree_attribute attrib;
+		}
+	}
+} StartElementType<read=printLayer1>;
+
+typedef struct 
+{
+    ResStringPool_ref ns<comment="String of the full namespace of this element">;
+    ResStringPool_ref name<comment="String name of this node if it is an ELEMENT; the raw character data if this is a CDATA node">;
+} ResXMLTree_endElementExt;
+
+typedef struct(int layer)
+{
+	local int locallayer = layer;
+	ResXMLTree_node header;
+	ResXMLTree_endElementExt endEleExt;
+} EndElementType<read=printLayer2>;
+
+local int layer = 0;
+string printLayer1(StartElementType& m)
+{
+	string s;
+	SPrintf(s,"%dth layer", m.locallayer);
+	return s;
+}
+
+string printLayer2(EndElementType& m)
+{
+	string s;
+	SPrintf(s,"%dth layer", m.locallayer);
+	return s;
+}
+
+typedef struct 
+{
+    struct ResStringPool_ref data<comment="The raw CDATA character data">;
+    struct Res_value typedData<comment="The typed value of the character data if this is a CDATA node">;
+} ResXMLTree_cdataExt;
+
+typedef struct 
+{
+	ResXMLTree_node header;
+	ResXMLTree_cdataExt ext;
+} CDataType;
+
+void XmlType(int begin)
+{
+	ResChunk_header header <bgcolor=cLtPurple>;
+	if(header.size > header.headerSize)
+	{
+		local int pos = FTell();
+		local ushort ltype;
+		local ushort lheaderSize;
+		local uint lsize;
+		while(pos < begin + header.size - header.headerSize)
+		{
+			ltype = ReadUShort(pos);
+			lheaderSize = ReadUShort(pos+2);
+			lsize = ReadUInt(pos+4);
+			switch(ltype)
+			{
+				case RES_STRING_POOL_TYPE:
+					StringPoolType strPool(pos) <bgcolor=cLtGray>;
+					break;
+				case RES_XML_RESOURCE_MAP_TYPE:
+					XmlResourceMapType resMap <bgcolor=cLtAqua>; 
+					break;
+				case RES_XML_START_NAMESPACE_TYPE:
+					NamespaceType startNs;
+					break;
+				case RES_XML_END_NAMESPACE_TYPE:
+					NamespaceType EndNs;
+					break;
+				case RES_XML_START_ELEMENT_TYPE:
+					layer++;
+					StartElementType startEle(layer);
+					break;
+				case RES_XML_END_ELEMENT_TYPE:
+					EndElementType endEle(layer);
+					layer--;
+					break;
+				case RES_XML_CDATA_TYPE:
+					CDataType cData;
+					break;
+				default:
+					Printf("--%d--\n",ltype);
+					return;
+			}
+			pos += lsize;
+			FSeek(pos);
+		}
+	}
+}
+
+typedef struct 
+{
+    struct ResChunk_header header;
+    uint packageCount<comment="The number of ResTable_package structures">;
+} ResTable_header;
+
+
+typedef struct
+{
+    local int pos = FTell();
+    struct ResChunk_header header;
+    uint id<comment="Package IDs">;
+    wchar_t name[128]<comment="Actual name of this package">;
+    uint typeStrings<comment="Offset to a ResStringPool_header defining the resource type symbol table">;
+    uint lastPublicType<comment="Last index into typeStrings that is for public use by others">;
+    uint keyStrings<comment="Offset to a ResStringPool_header defining the resource key symbol table">;
+    uint lastPublicKey<comment="Last index into keyStrings that is for public use by others">;
+} ResTable_package;
+
+typedef struct
+{
+    struct ResChunk_header header;
+    uchar id<comment="The type identifier this chunk is holding">;
+    uchar res0<comment="Must be 0">;
+    ushort res1<comment="Must be 0">;
+    uint entryCount<comment="Number of uint32_t entry configuration masks that follow">;
+    enum 
+	{
+        SPEC_PUBLIC = 0x40000000// Additional flag indicating an entry is public.
+    };
+	if(entryCount >= 0)
+		uint configmask[entryCount];
+} ResTable_typeSpec;
+
+typedef union 
+{
+    uint size<comment="Number of bytes in this structure">;
+	uchar data[size];
+} ResTable_config;
+
+typedef struct 
+{
+    ushort size<comment="Number of bytes in this structure">;
+    enum
+	{
+        FLAG_COMPLEX = 0x0001,
+        FLAG_PUBLIC = 0x0002,
+        FLAG_WEAK = 0x0004
+    };
+    ushort flags;
+    ResStringPool_ref key;
+} ResTable_entry <read=tableEntryRead>;
+
+string tableEntryRead(ResTable_entry &entry) {
+    return readString(entry.key);
+}
+
+typedef struct 
+{
+    uint indent;
+} ResTable_ref;
+
+typedef struct
+{
+    ResTable_entry entry;
+    ResTable_ref parent;
+    //uint parent;
+    uint count;
+} ResTable_map_entry;
+
+typedef struct 
+{
+    ResTable_ref name;
+    Res_value value;
+} ResTable_map;
+
+typedef struct
+{
+    ResTable_map_entry mapEntry;
+    local uint cnt = mapEntry.count;
+    if (cnt > 0) {
+        ResTable_map tablemap[cnt];
+    }
+} ResTable_map_entry0;
+
+typedef struct 
+{
+	local int pos = FTell();
+    ResChunk_header header;
+    enum 
+	{
+        NO_ENTRY = 0xFFFFFFFF
+    };
+    uchar id<comment="The type identifier this chunk is holding">;
+    uchar res0<comment="Must be 0">;
+    ushort res1<comment="Must be 0">;
+    uint entryCount<comment="Number of uint32_t entry indices that follow">;
+    uint entriesStart<comment="Offset from header where ResTable_entry data starts">;
+    ResTable_config config<comment="Configuration this collection of entries is designed for">;
+	uint entryOffsets[entryCount];
+    
+    local ushort size;
+    local uint i;
+    local uint entryOff;
+    if (entryCount > 0) {
+        for(i=0; i<entryCount; i++) {
+            entryOff = entryOffsets[i];
+            if (entryOff != 0xFFFFFFFF) {
+                size = ReadUInt(FTell());
+                if (size == sizeof(ResTable_entry)) {   //compare size is sample, or check ResTable_entry's flags
+                    ResTable_entry entry;
+                    Res_value value;
+                } else {
+                    ResTable_map_entry0 mapEntry;
+                }
+            }
+        }
+    }
+	//FSeek(pos + entriesStart);
+	//ResTable_entry resentry[ (header.size - entriesStart) / sizeof(ResTable_entry)];
+} ResTable_type;
+
+typedef struct(int begin)
+{
+	ResTable_package header;
+    FSeek(begin + header.header.headerSize);
+	local int pos = FTell();
+	local ushort ltype;
+	local ushort lheaderSize;
+	local uint lsize;
+	while(pos < begin + header.header.size)
+	{
+        //Printf("pos=%x begin=%x size=%x headersize=%x\n",pos,begin,header.header.size,header.header.headerSize);
+		ltype = ReadUShort(pos);
+		lheaderSize = ReadUShort(pos+2);
+		lsize = ReadUInt(pos+4);
+		switch(ltype)
+		{
+			case RES_STRING_POOL_TYPE:
+				if(FTell() - begin == header.typeStrings)
+				{
+					StringPoolType typeStrings(FTell());
+				}
+				else if(FTell() - begin == header.keyStrings)
+				{
+					StringPoolType keyStrings(FTell());
+				}
+				else
+				{
+					StringPoolType strPool(FTell());
+				}
+				break;
+			case RES_TABLE_TYPE_SPEC_TYPE:
+				ResTable_typeSpec typeSpec;
+				break;
+			case RES_TABLE_TYPE_TYPE:
+				ResTable_type typeType;
+				break;
+			default:
+				Printf("--%d--\n",ltype);
+				return;
+		}
+		pos += lsize;
+		FSeek(pos);
+	}
+} TablePackageType;
+
+void ResTableType(int begin)
+{
+	ResTable_header header <bgcolor=cLtPurple>;
+	if(header.header.size > header.header.headerSize)
+	{
+		local int pos = FTell();
+		local ushort ltype;
+		local ushort lheaderSize;
+		local uint lsize;
+		while(pos < begin + header.header.size - header.header.headerSize)
+		{
+			ltype = ReadUShort(pos);
+			lheaderSize = ReadUShort(pos+2);
+			lsize = ReadUInt(pos+4);
+			switch(ltype)
+			{
+				case RES_STRING_POOL_TYPE:
+					StringPoolType strPool(pos) <bgcolor=cLtGray>;
+					break;
+				case RES_TABLE_PACKAGE_TYPE:
+					pooltype++;
+					TablePackageType tablePackage(pos);
+					break;
+				default:
+					Printf("--%d--\n",ltype);
+					return;
+			}
+			pos += lsize;
+			FSeek(pos);
+		}
+	}
+}
+
+//parse begin
+local int gpos = 0;
+local ushort gtype = 0;
+local ushort gsize = 0;
+local int pooltype = -1;
+FSeek(0);
+while(!FEof())
+{
+	gpos = FTell();
+	gtype = ReadUShort(gpos);
+	gsize = ReadUInt(gpos + 4);
+	switch(gtype)
+	{
+		case RES_XML_TYPE:
+			XmlType(gpos);
+			return;
+		case RES_TABLE_TYPE:
+			ResTableType(gpos);
+			return;
+		default:
+			Printf("unknown %x, pos:%x\n", gtype, gpos);
+			return;
+	}
+	FSeek(gpos + gsize);
+}

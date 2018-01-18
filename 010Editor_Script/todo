@@ -1,0 +1,6 @@
+-> linux elf file format -> http://www.sweetscape.com/010editor/repository/files/ELF.bt
+-> android dex/odex file format -> http://www.sweetscape.com/010editor/repository/files/DEX.bt
+-> macho file format -> http://www.sweetscape.com/010editor/repository/files/MachO.bt
+-> android oat file format -> https://github.com/tomken/010_template_for_android/blob/master/OATTemplate.bt
+-> ios binary plist file format
+-> ios/linux deb file format

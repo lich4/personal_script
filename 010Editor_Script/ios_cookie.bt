@@ -1,0 +1,93 @@
+//------------------------------------------------
+//--- 010 Editor v7.0 Binary Template
+//
+//      File: Parser for iOS binary cookie
+//   Authors: lichao890427
+//   Version: 1.0
+//   Purpose: Parser for iOS binary cookie
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 2017.4.13 first edit
+//------------------------------------------------
+typedef struct 
+{
+    char signature[4];
+    int num_pages;
+    int page_size[num_pages];
+} Cookie_Header;
+
+char[] readFlag(int flags)
+{
+    if(flags==0)
+        return "";
+    else if(flags==1)
+        return "Secure";
+    else if(flags==4)
+        return "HttpOnly";
+    else if(flags==5)
+        return "Secure;HttpOnly";
+    else
+        return "Unknown";
+}
+
+typedef struct(int len)
+{
+    char url[len];
+} str;
+
+char[] readUrl(str& url)
+{
+    return url.url;
+}
+
+typedef struct
+{
+    local int begin = FTell();
+    int unknown1;
+    int flags<read=readFlag>;
+    int unknown2;
+    int urloffset;
+    int nameoffset;
+    int pathoffset;
+    int valueoffset;
+    int unknown3;
+    int unknown4;
+    local int len;
+    FSeek(begin+urloffset-4);
+    char url[];
+    FSeek(begin+nameoffset-4);
+    char name[];
+    FSeek(begin+pathoffset-4);
+    char path[];
+    FSeek(begin+valueoffset-4);
+    char value[];
+    //char cookie[cookiesize];
+} Cookie_Content;
+
+typedef struct(int size)
+{
+    local int begin = FTell();
+    int headerbegin;
+    int num_cookie;
+    int cookie_offsets[num_cookie];
+    int headerend;    
+    local int i;
+    for(i=0;i<num_cookie;i++)
+    {
+        FSeek(begin+cookie_offsets[i]);
+        int cookiesize;
+        Cookie_Content content;
+    }
+    FSeek(begin+size);
+} Cookie_Page;
+
+BigEndian();
+Cookie_Header header;
+local int i;
+LittleEndian();
+for(i=0;i<header.num_pages;i++)
+{
+    Cookie_Page page(header.page_size[i]);
+}
+

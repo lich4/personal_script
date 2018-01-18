@@ -1,0 +1,2718 @@
+//------------------------------------------------
+//--- 010 Editor v7.0 Binary Template
+//
+//      File: Drive.bt
+//   Authors: SweetScape Software, Benjamin Vernoux
+//   Version: 3.0
+//   Purpose: Parse logical and physical drives including 
+//            MBR, FAT16, FAT32, HFS, NTFS and extended partitions.
+//            Can display subdirectories and data for individual
+//            files. Note that some NTFS drives
+//            may not work properly (see file comments).
+//  Category: Drives
+// File Mask: Drive*,Physical*
+//  ID Bytes: [+510] 55 AA,[+1024] 48 2B,[+1024] 48 58
+//   History: 
+//   3.0   2017-12-10 Added support for ext partitions; fix Fat format error
+//   2.0   2016-07-06 SweetScape Software: Added support for HFS drives (macOS/iOS).
+//   1.1   2016-06-14 SweetScape Software: Added support for EFI partitions.
+//   1.0   2016-05-13 SweetScape Software: Added NTFS support,
+//                    parsing FAT files and subdirectories,
+//                    extended partitions. Created from original
+//                    MBRTemplateFAT.bt file with major rework
+//                    and merged information from other templates.  
+//   0.1   2013-01-14 B Vernoux: Initial release.
+//
+// NTFS IMPORTANT NOTE:
+//  Not all NTFS drives can be parsed correctly. Some NTFS
+//  sectors use a special Fixup value where the last two 
+//  bytes of a sector are copied to a different location
+//  in order to detect bad sectors. This template cannot 
+//  properly handle the Fixup values and if the Fixup
+//  value hits critical information the template may stop.
+//------------------------------------------------
+LittleEndian(); 
+local int NumDrives = 0;
+
+//################################################################
+// MBR - Master Boot Record (contains partition information)
+//################################################################
+
+// Partition Types
+typedef enum <uchar>
+{
+   EMPTY                          = 0,
+   FAT_12                         = 1,
+   XENIX_ROOT                     = 2,
+   XENIX_USR                      = 3,
+   FAT_16_INF32MB                 = 4,
+   EXTENDED                       = 5,
+   FAT_16                         = 6,
+   NTFS_HPFS                      = 7,
+   AIX                            = 8,
+   AIX_BOOT                       = 9,
+   OS2_BOOT_MGR                   = 10,
+   PRI_FAT32_INT13                = 11,
+   EXT_FAT32_INT13                = 12,
+   SILICON_SAFE                   = 13,
+   EXT_FAT16_INT13                = 14,
+   WIN95_EXT_PARTITION            = 15,
+   OPUS                           = 16,
+   FAT_12_HIDDEN                  = 17,
+   COMPAQ_DIAG                    = 18,
+   FAT_16_HIDDEN_INF32MB          = 20,
+   FAT_16_HIDDEN                  = 22,
+   NTFS_HPFS_HIDDEN               = 23,
+   AST_SMARTSLEEP_PARTITION       = 24,
+   OSR2_FAT32                     = 27,
+   OSR2_FAT32_LBA                 = 28,
+   HIDDEN_FAT16_LBA               = 30,
+   NEC_DOS                        = 36,
+   PQSERVICE_ROUTERBOOT           = 39,
+   ATHEOS_FILE_SYSTEM             = 42,
+   NOS                            = 50,
+   JFS_ON_OS2_OR_ECS              = 53,
+   THEOS_2GB                      = 56,
+   PLAN_9_THEOS_SPANNED           = 57,
+   THEOS_4GB                      = 58,
+   THEOS_EXTENDED                 = 59,
+   PARTITIONMAGIC_RECOVERY        = 60,
+   HIDDEN_NETWARE                 = 61,
+   VENIX                          = 64,
+   LINUX_PPC_PREP                 = 65,
+   LINUX_SWAP                     = 66,
+   LINUX_NATIVE                   = 67,
+   GOBACK                         = 68,
+   BOOT_US_EUMEL_ELAN             = 69,
+   EUMEL_ELAN_1                   = 70,
+   EUMEL_ELAN_2                   = 71,
+   EUMEL_ELAN_3                   = 72,
+   OBERON                         = 76,
+   QNX4_X                         = 77,
+   QNX4_X_2ND_PART                = 78,
+   QNX4_X_3RD_PART_OBERON         = 79,
+   ONTRACK_LYNX_OBERON            = 80,
+   ONTRACK_NOVELL                 = 81,
+   CP_M_MICROPORT_SYSV_AT         = 82,
+   DISK_MANAGER_AUX3              = 83,
+   DISK_MANAGER_DDO               = 84,
+   EZ_DRIVE                       = 85,
+   GOLDEN_BOW_EZ_BIOS             = 86,
+   DRIVEPRO_VNDI                  = 87,
+   PRIAM_EDISK                    = 92,
+   SPEEDSTOR                      = 97,
+   GNU_HURD                       = 99,
+   NOVEL1                         = 100,
+   NETWARE_386                    = 101,
+   NETWARE_SMS_PARTITION          = 102,
+   NOVELL_1                       = 103,
+   NOVELL_2                       = 104,
+   NETWARE_NSS                    = 105,
+   DISKSECURE_MULTI_BOOT          = 112,
+   V7_X86                         = 114,
+   PC_IX                          = 117,
+   M2FS_M2CS_VNDI                 = 119,
+   XOSL_FS                        = 120,
+   MINUX_OLD                      = 128,
+   MINUX_LINUX                    = 129,
+   LINUX_SWAP_2                   = 130,
+   LINUX_NATIVE_2                 = 131,
+   OS2_HIDDEN_HIBERNATION         = 132,
+   LINUX_EXTENDED                 = 133,
+   OLD_LINUX_RAID_FAT16           = 134,
+   NTFS_VOLUME_SET                = 135,
+   LINUX_PLAINTEXT_TABLE          = 136,
+   LINUX_KERNEL_AIR_BOOT          = 138,
+   FAULT_TOLERANT_FAT32           = 139,
+   FAULT_TOLERANT_FAT32_INT13H    = 140,
+   FREE_FDISK_FAT12               = 141,
+   LINUX_LOGICAL_VOLUME_MANAGER   = 142,
+   FREE_FDISK_PRIMARY_FAT16       = 144,
+   FREE_FDISK_EXTENDED            = 145,
+   FREE_FDISK_LARGE_FAT16         = 146,
+   AMOEBA                         = 147,
+   AMOEBA_BBT                     = 148,
+   MIT_EXOPC                      = 149,
+   CHRP_ISO_9660                  = 150,
+   FREE_FDISK_FAT32               = 151,
+   FREE_FDISK_FAT32_LBA           = 152,
+   DCE376                         = 153,
+   FREE_FDISK_FAT16_LBA           = 154,
+   FREE_FDISK_EXTENDED_LBA        = 155,
+   FORTHOS                        = 158,
+   BSD_OS                         = 159,
+   LAPTOP_HIBERNATION             = 160,
+   LAPTOP_HIBERNATION_HP          = 161,
+   HP_EXPANSION_SPEEDSTOR_1       = 163,
+   HP_EXPANSION_SPEEDSTOR_2       = 164,
+   BSD_386                        = 165,
+   OPENBSD_SPEEDSTOR              = 166,
+   NEXTSTEP                       = 167,
+   MAC_OS_X                       = 168,
+   NETBSD                         = 169,
+   OLIVETTI                       = 170,
+   MAC_OS_X_BOOT_GO               = 171,
+   RISC_OS_ADFS                   = 173,
+   SHAGOS                         = 174,
+   SHAGOS_SWAP_MACOS_X_HFS        = 175,
+   BOOTSTAR_DUMMY                 = 176,
+   HP_EXPANSION_QNX               = 177,
+   QNX_POWER_SAFE                 = 178,
+   HP_EXPANSION_QNX_2             = 179,
+   HP_EXPANSION_SPEEDSTOR_3       = 180,
+   HP_EXPANSION_FAT16             = 182,
+   BSDI_FS                        = 183,
+   BSDI_SWAP                      = 184,
+   BOOT_WIZARD_HIDDEN             = 187,
+   ACRONIS_BACKUP                 = 188,
+   BONNYDOS_286                   = 189,
+   SOLARIS_8_BOOT                 = 190,
+   NEW_SOLARIS                    = 191,
+   CTOS_REAL_32_DR_DOS            = 192,
+   DRDOS_SECURED                  = 193,
+   HIDDEN_LINUX_SWAP              = 195,
+   DRDOS_SECURED_FAT16            = 196,
+   DRDOS_SECURED_EXTENDED         = 197,
+   DRDOS_SECURED_FAT16_STRIPE     = 198,
+   SYRINX                         = 199,
+   DR_DOS_8_1                     = 200,
+   DR_DOS_8_2                     = 201,
+   DR_DOS_8_3                     = 202,
+   DR_DOS_7_SECURED_FAT32_CHS     = 203,
+   DR_DOS_7_SECURED_FAT32_LBA     = 204,
+   CTOS_MEMDUMP                   = 205,
+   DR_DOS_7_FAT16X                = 206,
+   DR_DOS_7_SECURED_EXT_DOS       = 207,
+   REAL_32_SECURE                 = 208,
+   OLD_MULTIUSER_FAT12            = 209,
+   OLD_MULTIUSER_FAT16            = 212,
+   OLD_MULTIUSER_EXTENDED         = 213,
+   OLD_MULTIUSER_FAT16_2          = 214,
+   CP_M_86                        = 216,
+   NON_FS_DATA_POWERCOPY_BACKUP   = 218,
+   CP_M                           = 219,
+   HIDDEN_CTOS_MEMDUMP            = 221,
+   DELL_POWEREDGE_UTIL            = 222,
+   DG_UX_DISK_MANAGER_BOOTIT      = 223,
+   ACCESS_DOS                     = 225,
+   DOS_R_O                        = 227,
+   SPEEDSTOR_FAT16_EXTENDED       = 228,
+   STORAGE_DIMENSIONS_SPEEDSTOR   = 230,
+   LUKS                           = 232,
+   RUFUS_EXTRA_FREEDESKTOP        = 234,
+   BEOS_BFS                       = 235,
+   SKYOS_SKYFS                    = 236,
+   LEGACY_MBR_EFI_HEADER          = 238,
+   EFI_FS                         = 239,
+   LINUX_PA_RISC_BOOT             = 240,
+   STORAGE_DIMENSIONS_SPEEDSTOR_2 = 241,
+   DOS_SECONDARY                  = 242,
+   SPEEDSTOR_LARGE_PROLOGUE       = 244,
+   PROLOGUE_MULTI_VOLUME          = 245,
+   STORAGE_DIMENSIONS_SPEEDSTOR_3 = 246,
+   DDRDRIVE_SOLID_STATE_FS        = 247,
+   PCACHE                         = 249,
+   BOCHS                          = 250,
+   VMWARE_FILE_SYSTEM             = 251,
+   VMWARE_SWAP                    = 252,
+   LINUX_RAID                     = 253,
+   SPEEDSTOR_LANSTEP_LINUX        = 254,
+   BBT                            = 255
+} SYSTEMID;
+
+// Media descriptor
+typedef enum <uchar>
+{
+    FLOPPY                        = 0xf0,
+    HARD_DRIVE                    = 0xf8,
+    FLOPPY_320K_1                 = 0xfa,
+    FLOPPY_640K                   = 0xfb,
+    FLOPPY_180K                   = 0xfc,
+    FLOPPY_360K                   = 0xfd,
+    FLOPPY_160K                   = 0xfe,
+    FLOPPY_320K_2                 = 0xff,
+} MEDIA;
+
+// Boot Indicator Values
+typedef enum <uchar>
+{
+   NOBOOT           = 0,
+   SYSTEM_PARTITION = 128,
+} BOOTINDICATOR;
+
+// GUID - Global Unique Identifier
+typedef UBYTE GUID[16] <read=ReadGUID, format=hex>;
+string ReadGUID( GUID &g )
+{
+    string s;
+    SPrintf( s, "{%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X}",
+        g[3],g[2],g[1],g[0],g[5],g[4],g[7],g[6],g[8],g[9],g[10],g[11],g[12],g[13],g[14],g[15] );
+    return s;
+}
+
+// Partition Entry
+typedef struct
+{
+   BOOTINDICATOR BootIndicator;
+   UBYTE         StartingHead;
+   WORD          StartingSectCylinder;   // Need Bit fields
+   SYSTEMID      SystemID;
+   UBYTE         EndingHead;
+   WORD          EndingSectCylinder;     // Need Bit fields
+   DWORD         RelativeSector;
+   DWORD         TotalSectors;
+} PARTITION_ENTRY <read=ReadPARTITION_ENTRY>;
+
+// Show SystemID beside each partition
+string ReadPARTITION_ENTRY( PARTITION_ENTRY &p )
+{
+    string s = EnumToString( p.SystemID );
+    if( Strlen(s) == 0 )
+        SPrintf( s, "(%d)", p.SystemID );
+    return s;
+}
+
+// MBR - Master Boot Record
+typedef struct 
+{
+   UBYTE           BootCode[446];
+   PARTITION_ENTRY partitions[4];
+   WORD            EndOfSectorMarker <format=hex>;
+} MASTER_BOOT_RECORD <open=true>;
+
+// Extended partition
+typedef struct 
+{
+   UBYTE           Empty[446];
+   PARTITION_ENTRY partitions[4];
+   WORD            EndOfSectorMarker <format=hex>;
+} EXTENDED_PARTITION <open=true>;
+
+//################################################################
+// EFI (Extensible Firmware Interface) Partitions
+//################################################################
+
+// EFI Type - First 4 bytes of the GUID
+typedef enum <DWORD>
+{
+    EFI_UNUSED              = 0x00000000,
+    EFI_MBR                 = 0x024DEE41,
+    EFI_SYSTEM              = 0xC12A7328,
+    EFI_BIOS_BOOT           = 0x21686148,
+    EFI_IFFS                = 0xD3BFE2DE,
+    EFI_SONY_BOOT           = 0xF4019732,
+    EFI_LENOVO_BOOT         = 0xBFBFAFE7,
+    EFI_MSR                 = 0xE3C9E316,
+    EFI_BASIC_DATA          = 0xEBD0A0A2,
+    EFI_LDM_META            = 0x5808C8AA,
+    EFI_LDM                 = 0xAF9B60A0,
+    EFI_RECOVERY            = 0xDE94BBA4,
+    EFI_GPFS                = 0x37AFFC90,
+    EFI_STORAGE_SPACES      = 0xE75CAF8F,
+    EFI_HPUX_DATA           = 0x75894C1E,
+    EFI_HPUX_SERVICE        = 0xE2A1E728,
+    EFI_LINUX_DAYA          = 0x0FC63DAF,
+    EFI_LINUX_RAID          = 0xA19D880F,
+    EFI_LINUX_ROOT32        = 0x44479540,
+    EFI_LINUX_ROOT64        = 0x4F68BCE3,
+    EFI_LINUX_ROOT_ARM32    = 0x69DAD710,
+    EFI_LINUX_ROOT_ARM64    = 0xB921B045,
+    EFI_LINUX_SWAP          = 0x0657FD6D,
+    EFI_LINUX_LVM           = 0xE6D6D379,
+    EFI_LINUX_HOME          = 0x933AC7E1,
+    EFI_LINUX_SRV           = 0x3B8F8425,
+    EFI_LINUX_DM_CRYPT      = 0x7FFEC5C9,
+    EFI_LINUX_LUKS          = 0xCA7D7CCB,
+    EFI_LINUX_RESERVED      = 0x8DA63339,
+    EFI_FREEBSD_BOOT        = 0x83BD6B9D,
+    EFI_FREEBSD_DATA        = 0x516E7CB4,
+    EFI_FREEBSD_SWAP        = 0x516E7CB5,
+    EFI_FREEBSD_UFS         = 0x516E7CB6,
+    EFI_FREEBSD_VINUM       = 0x516E7CB8,
+    EFI_FREEBSD_ZFS         = 0x516E7CBA,
+    EFI_OSX_HFS             = 0x48465300,
+    EFI_OSX_UFS             = 0x55465300,
+    EFI_OSX_ZFS             = 0x6A898CC3,
+    EFI_OSX_RAID            = 0x52414944,
+    EFI_OSX_RAID_OFFLINE    = 0x52414944,
+    EFI_OSX_RECOVERY        = 0x426F6F74,
+    EFI_OSX_LABEL           = 0x4C616265,
+    EFI_OSX_TV_RECOVERY     = 0x5265636F,
+    EFI_OSX_CORE_STORAGE    = 0x53746F72,
+    EFI_SOLARIS_BOOT        = 0x6A82CB45,
+    EFI_SOLARIS_ROOT        = 0x6A85CF4D,
+    EFI_SOLARIS_SWAP        = 0x6A87C46F,
+    EFI_SOLARIS_BACKUP      = 0x6A8B642B,
+    EFI_SOLARIS_USR         = 0x6A898CC3,
+    EFI_SOLARIS_VAR         = 0x6A8EF2E9,
+    EFI_SOLARIS_HOME        = 0x6A90BA39,
+    EFI_SOLARIS_ALTERNATE   = 0x6A9283A5,
+    EFI_SOLARIS_RESERVED1   = 0x6A945A3B,
+    EFI_SOLARIS_RESERVED2   = 0x6A9630D1,
+    EFI_SOLARIS_RESERVED3   = 0x6A980767,
+    EFI_SOLARIS_RESERVED4   = 0x6A96237F,
+    EFI_SOLARIS_RESERVED5   = 0x6A8D2AC7,
+    EFI_NETBSD_SWAP         = 0x49F48D32,
+    EFI_NETBSD_FFS          = 0x49F48D5A,
+    EFI_NETBSD_LFS          = 0x49F48D82,
+    EFI_NETBSD_RAID         = 0x49F48DAA,
+    EFI_NETBSD_CONCAT       = 0x2DB519C4,
+    EFI_NETBSD_ENCRYPT      = 0x2DB519EC,
+    EFI_CHROMEOS_KERNEL     = 0xFE3A2A5D,
+    EFI_CHROMEOS_ROOTFS     = 0x3CB8E202,
+    EFI_CHROMEOS_FUTURE     = 0x2E0A753D,
+    EFI_HAIKU               = 0x42465331,
+    EFI_MIDNIGHTBSD_BOOT    = 0x85D5E45E,
+    EFI_MIDNIGHTBSD_DATA    = 0x85D5E45A,
+    EFI_MIDNIGHTBSD_SWAP    = 0x85D5E45B,
+    EFI_MIDNIGHTBSD_UFS     = 0x0394EF8B,
+    EFI_MIDNIGHTBSD_VINUM   = 0x85D5E45C,
+    EFI_MIDNIGHTBSD_ZFS     = 0x85D5E45D,
+    EFI_CEPH_JOURNAL        = 0x45B0969E,
+    EFI_CEPH_ENCRYPT        = 0x45B0969E,
+    EFI_CEPH_OSD            = 0x4FBD7E29,
+    EFI_CEPH_ENCRYPT_OSD    = 0x4FBD7E29,
+    EFI_CEPH_CREATE         = 0x89C57F98,
+    EFI_CEPH_ENCRYPT_CREATE = 0x89C57F98,
+    EFI_OPENBSD             = 0x824CC7A0,
+    EFI_QNX                 = 0xCEF5A9AD,
+    EFI_PLAN9               = 0xC91818F9,
+    EFI_VMWARE_VMKCORE      = 0x9D275380,
+    EFI_VMWARE_VMFS         = 0xAA31E02A,
+    EFI_VMWARE_RESERVED     = 0x9198EFFC,
+} EFI_TYPE <format=hex>;
+
+// EFI partition entry
+typedef struct 
+{
+    EFI_TYPE Type; // Use the first 4 bytes of the GUID to show the type
+    FSkip( -4 );
+    GUID     TypeGUID;
+    GUID     PartitionGUID;
+    UQUAD    FirstLBA;
+    UQUAD    LastLBA;
+    UQUAD    System   : 1;    // Flags
+    UQUAD    Ignore   : 1;
+    UQUAD    Legacy   : 1;
+    UQUAD    : 58;
+    UQUAD    ReadOnly : 1;
+    UQUAD    Hidden   : 1;
+    UQUAD    NoMount  : 1;
+    wchar_t  Name[36];
+
+    // Some partitions may have extra space at the end
+    local int size = parentof(this).header.PartitionSize;
+    if( size > 128 )
+        UBYTE   Unused[ size - 128 ];
+} EFI_PARTITION_ENTRY <read=ReadEFI_PARTITION_ENTRY>;
+
+// Show EFI partition name and EFI type beside the entry
+wstring ReadEFI_PARTITION_ENTRY( EFI_PARTITION_ENTRY &entry )
+{
+    return entry.Name + " (" + EnumToString( entry.Type ) + ")";
+}
+
+// EFI partition
+typedef struct
+{
+    // EFI partition header 
+    struct EFI_PARTITION_HEADER
+    {
+        BYTE    Signature[8];
+        DWORD   Revision;
+        DWORD   HeaderSize;
+        DWORD   HeaderCRC32 <format=hex>;
+        DWORD   Reserved;
+        UQUAD   CurrentLBA;
+        UQUAD   BackupLBA;
+        UQUAD   FirstUsableLBA;
+        UQUAD   LastUsableLBA;
+        GUID    DiskGUID;
+        UQUAD   PartitionLBA;
+        DWORD   NumPartitions;
+        DWORD   PartitionSize;
+        DWORD   PartitionCRC32 <format=hex>;
+        UBYTE   Empty[420];
+    } header;
+
+    // Check signature
+    if( header.Signature == "EFI PART" )
+    {
+        // Count valid partitions
+        local int count = 0;
+        while( (ReadUQuad(FTell()+count*header.PartitionSize) != 0) 
+                && (count < header.NumPartitions) )
+            count++;
+
+        // Create array of partitions
+        if( count > 0 )
+            EFI_PARTITION_ENTRY partitions[count] <optimize=true>;
+    }
+
+} EFI_PARTITION <open=true>;
+
+//################################################################
+// FAT16 Drives
+//################################################################
+
+// Forward definition;
+struct FAT_DIRECTORY;
+
+// FAT 16 Boot sector
+typedef struct  
+{
+    UBYTE   jmp[3];
+    CHAR    OemName[8];
+
+    typedef struct FAT16_BPB
+    {
+       USHORT BytesPerSector;
+       UBYTE  SectorsPerCluster;
+       USHORT ReservedSectors;
+       UBYTE  NumberOfCopiesOfFats;
+       USHORT MaxRootDirEntries;
+       USHORT NumberOfSectors;
+       MEDIA  MediaDescriptor <format=hex>;
+       USHORT SectorsPerFAT;
+       USHORT SectorsPerTrack;
+       USHORT NumHeadsPerCylinder;
+       ULONG  NumHiddenSectors;
+       ULONG  NumSectorInPartition;
+    };
+    FAT16_BPB bpb_fat16;
+    USHORT    LogicDriveNumber;
+    UBYTE     extBootSignature <format=hex>;
+    ULONG     SerialNumber <format=hex>;
+    CHAR      VolumeLabel[11];
+    CHAR      FileSystem[8];
+    UBYTE     ExecutableCode[448];
+    WORD      EndOfSectorMarker <format=hex>;
+} FAT16_BOOTSECTOR <read=ReadBOOTSECTOR_FAT16>;
+
+// Display the volume label beside the boot sector
+string ReadBOOTSECTOR_FAT16( FAT16_BOOTSECTOR &boot )
+{
+    return boot.VolumeLabel;
+}
+
+// FAT16 FAT Table
+typedef enum <ushort>
+{
+   HARD_DISK           = 0xfff8,
+   FLOPPY_DISK         = 0xfff0
+} FAT16_MEDIATYPE;
+
+typedef enum <ushort>
+{
+   PARTITION_NOT_IN_USE   = 0xffff,
+   PARTITION_IN_USE       = 0xfff7
+} FAT16_PARTITIONSTATE;
+
+typedef enum <ushort>
+{
+   FREE_CLUSTER = 0x0000,
+   RESERVED_0001  = 0x0001,
+   RESERVED_FFF0  = 0xFFF0,
+   RESERVED_FFF1  = 0xFFF1,
+   RESERVED_FFF2  = 0xFFF2,
+   RESERVED_FFF3  = 0xFFF3,
+   RESERVED_FFF4  = 0xFFF4,
+   RESERVED_FFF5  = 0xFFF5,
+   RESERVED_FFF6  = 0xFFF6,
+   BAD_CLUSTER  = 0xFFF7,
+   USED_LAST_CLUSTER_FFF8 = 0xFFF8,
+   USED_LAST_CLUSTER_FFF9 = 0xFFF9,
+   USED_LAST_CLUSTER_FFFA = 0xFFFA,
+   USED_LAST_CLUSTER_FFFB = 0xFFFB,
+   USED_LAST_CLUSTER_FFFC = 0xFFFC,
+   USED_LAST_CLUSTER_FFFD = 0xFFFD,
+   USED_LAST_CLUSTER_FFFE = 0xFFFE,
+   USED_LAST_CLUSTER_FFFF = 0xFFFF
+} FAT16_CLUSTERINFO;
+
+// FAT 16 Table
+typedef struct (quad SizeOfFatTableInSectors, UBYTE NumberOfCopiesOfFats)
+{
+    local unsigned char ClusterEntrySize=2;
+    if(NumberOfCopiesOfFats==1)
+    {
+        FAT16_MEDIATYPE      MediaType;
+        FAT16_PARTITIONSTATE PartitionState;
+        FAT16_CLUSTERINFO    Cluster[ (((SizeOfFatTableInSectors*512)/ClusterEntrySize)-ClusterEntrySize) ];
+    }
+    else if(NumberOfCopiesOfFats==2)
+    {
+        FAT16_MEDIATYPE      MediaType;
+        FAT16_PARTITIONSTATE PartitionState;
+        FAT16_CLUSTERINFO    Cluster[ ((((SizeOfFatTableInSectors*512)/ClusterEntrySize)-ClusterEntrySize)/NumberOfCopiesOfFats)-1 ];
+
+        FAT16_MEDIATYPE      MediaTypeCopy;
+        FAT16_PARTITIONSTATE PartitionStateCopy;
+        FAT16_CLUSTERINFO    ClusterCopy[ ((((SizeOfFatTableInSectors*512)/ClusterEntrySize)-ClusterEntrySize)/NumberOfCopiesOfFats)-1 ];
+    }
+} FAT16_FAT_TABLE;
+
+// Define a FAT 16 Drive
+typedef struct
+{
+    local int   DriveNum = NumDrives++; // keep track of the index of this drive
+    local quad  FATTableFilePos;
+    local quad  DataAreaFilePos;
+    local DWORD ClusterSize;
+    local DWORD ClusterEntrySize;
+    local quad  FATTableSector;
+    local quad  FATTableSizeInSectors;
+    local quad  RootDirEntrySector;
+    local quad  RootDirEntryFilePos;
+    local quad  DataAreaSector;
+    local quad  CurrentPosSector=FTell()/512;
+
+    // FAT16 Boot sector
+    FAT16_BOOTSECTOR boot_fat16 <bgcolor=cLtPurple>;
+
+    // Calculate offsets
+    FATTableSector=CurrentPosSector+boot_fat16.bpb_fat16.ReservedSectors;
+    RootDirEntrySector=FATTableSector+(boot_fat16.bpb_fat16.SectorsPerFAT*2);
+    RootDirEntryFilePos=RootDirEntrySector*512;
+    FATTableFilePos=FATTableSector*512;
+    FATTableSizeInSectors=RootDirEntrySector-FATTableSector;
+	DataAreaSector=RootDirEntrySector+((boot_fat16.bpb_fat16.MaxRootDirEntries*32)/boot_fat16.bpb_fat16.BytesPerSector);
+	DataAreaFilePos=DataAreaSector*512;
+    ClusterSize=boot_fat16.bpb_fat16.BytesPerSector*boot_fat16.bpb_fat16.SectorsPerCluster;
+    ClusterEntrySize=2;
+    
+    // FAT16 FAT Table
+    FSeek( FATTableFilePos );
+    FAT16_FAT_TABLE table(FATTableSizeInSectors,boot_fat16.bpb_fat16.NumberOfCopiesOfFats) <bgcolor=cLtGray>;
+    
+    // FAT Directory Entry
+    FSeek( RootDirEntryFilePos );
+    FAT_DIRECTORY root_dir;
+
+} FAT16_DRIVE <open=true>;
+
+//################################################################
+// FAT32 Drives
+//################################################################
+
+// FAT 32 Boot sector
+typedef struct 
+{
+    BYTE   jmp[3];
+    CHAR   OemName[8];
+
+    typedef struct FAT32_BPB 
+    {
+        WORD  BytesPerSector;
+        BYTE  SectorsPerCluster;
+        WORD  ReservedSectors;
+        BYTE  NumberOfFATs;
+        WORD  RootEntries;
+        WORD  TotalSectors;
+        MEDIA Media;
+        WORD  SectorsPerFAT;
+        WORD  SectorsPerTrack;
+        WORD  HeadsPerCylinder;
+        DWORD HiddenSectors;
+        DWORD TotalSectorsBig;
+        DWORD SectorsPerFAT;
+        WORD  Flags;
+        WORD  Version;
+        DWORD RootCluster;
+        WORD  InfoSector;
+        WORD  BootBackupStart;
+        BYTE  Reserved[12];
+    };
+
+    FAT32_BPB   bpb_fat32;
+    BYTE   DriveNumber;
+    BYTE   Unused;
+    BYTE   ExtBootSignature <format=hex>;
+    DWORD  SerialNumber <format=hex>;
+    CHAR   VolumeLabel[11];
+    CHAR   FileSystem[8];   
+    UBYTE  BootCode[420];
+    WORD   EndOfSectorMarker <format=hex>;
+} FAT32_BOOTSECTOR <read=ReadFAT32_BOOTSECTOR>;
+
+// Display the volume label beside the boot sector
+string ReadFAT32_BOOTSECTOR( FAT32_BOOTSECTOR &boot )
+{
+    return boot.VolumeLabel;
+}
+
+// FAT32 FAT Table
+// Warning on FAT32 only 28bit contain value
+// 4 high bit (MSB) are reserved for future use.
+// It is why following FAT32 enum could be wrong if 4 high bit reserved are different from 0x0 or 0xf
+
+typedef enum <ulong>
+{
+   HARD_DISK_FAT32           = 0x0ffffff8,
+   FLOPPY_DISK_FAT32         = 0x0ffffff0
+} FAT32_MEDIATYPE;
+
+typedef enum <ulong>
+{
+   PARTITION_NOT_IN_USE_FAT32   = 0xffffffff,
+   PARTITION_IN_USE_FAT32       = 0xfffffff7
+} FAT32_PARTITIONSTATE;
+
+typedef enum <ulong>
+{
+   FREE_CLUSTER_FAT32 = 0x00000000,
+   RESERVED_0001_FAT32  = 0x00000001,
+   RESERVED_FFF0_FAT32  = 0x0FFFFFF0,
+   RESERVED_FFF1_FAT32  = 0x0FFFFFF1,
+   RESERVED_FFF2_FAT32  = 0x0FFFFFF2,
+   RESERVED_FFF3_FAT32  = 0x0FFFFFF3,
+   RESERVED_FFF4_FAT32  = 0x0FFFFFF4,
+   RESERVED_FFF5_FAT32  = 0x0FFFFFF5,
+   RESERVED_FFF6_FAT32  = 0x0FFFFFF6,
+   BAD_CLUSTER_FAT32  = 0x0FFFFFF7,
+   USED_LAST_CLUSTER_FFF8_FAT32 = 0x0FFFFFF8,
+   USED_LAST_CLUSTER_FFF9_FAT32 = 0x0FFFFFF9,
+   USED_LAST_CLUSTER_FFFA_FAT32 = 0x0FFFFFFA,
+   USED_LAST_CLUSTER_FFFB_FAT32 = 0x0FFFFFFB,
+   USED_LAST_CLUSTER_FFFC_FAT32 = 0x0FFFFFFC,
+   USED_LAST_CLUSTER_FFFD_FAT32 = 0x0FFFFFFD,
+   USED_LAST_CLUSTER_FFFE_FAT32 = 0x0FFFFFFE,
+   USED_LAST_CLUSTER_FFFF_FAT32 = 0x0FFFFFFF
+} FAT32_CLUSTERINFO;
+
+// FAT 32 Table
+typedef struct (quad SizeOfFatTableInSectors, UBYTE NumberOfCopiesOfFats)
+{
+    local unsigned char ClusterEntrySize=4;
+    if(NumberOfCopiesOfFats==1)
+    {
+        FAT32_MEDIATYPE      MediaType;
+        FAT32_PARTITIONSTATE PartitionState;
+        FAT32_CLUSTERINFO    Cluster[ (((SizeOfFatTableInSectors*512)/ClusterEntrySize)-ClusterEntrySize) ];
+    }
+    else if(NumberOfCopiesOfFats==2)
+    {
+        FAT32_MEDIATYPE      MediaType;
+        FAT32_PARTITIONSTATE PartitionState;
+        FAT32_CLUSTERINFO    Cluster[ ((((SizeOfFatTableInSectors*512)/ClusterEntrySize)-ClusterEntrySize)/NumberOfCopiesOfFats)-0 ];
+
+        FAT32_MEDIATYPE      MediaTypeCopy;
+        FAT32_PARTITIONSTATE PartitionStateCopy;
+        FAT32_CLUSTERINFO    ClusterCopy[ ((((SizeOfFatTableInSectors*512)/ClusterEntrySize)-ClusterEntrySize)/NumberOfCopiesOfFats)-0 ];
+    }
+} FAT32_FAT_TABLE;
+
+// Define a FAT 32 Drive
+typedef struct
+{
+    local int   DriveNum = NumDrives++; // keep track of the index of this drive
+    local quad  FATTableFilePos;
+    local quad  DataAreaFilePos;
+    local DWORD ClusterSize;
+    local DWORD ClusterEntrySize;
+    local quad  FATTableSector;
+    local quad  FATTableSizeInSectors;
+    local quad  RootDirEntrySector;
+    local quad  RootDirEntryFilePos;
+    local quad  DataAreaSector;
+    local quad  CurrentPosSector=FTell()/512;
+
+    // FAT32 Boot sector
+    FAT32_BOOTSECTOR boot_fat32 <bgcolor=cLtPurple>;
+
+    // Calculate offsets
+    FATTableSector=CurrentPosSector+boot_fat32.bpb_fat32.ReservedSectors;
+    RootDirEntrySector=FATTableSector+(boot_fat32.bpb_fat32.SectorsPerFAT*boot_fat32.bpb_fat32.NumberOfFATs);
+    RootDirEntrySector+=(boot_fat32.bpb_fat32.RootCluster-2)*boot_fat32.bpb_fat32.SectorsPerCluster;
+    RootDirEntryFilePos=RootDirEntrySector*512;
+    FATTableFilePos=FATTableSector*512;
+    FATTableSizeInSectors=RootDirEntrySector-FATTableSector;
+	DataAreaSector=RootDirEntrySector;
+	DataAreaFilePos=DataAreaSector*512;
+    ClusterSize=boot_fat32.bpb_fat32.BytesPerSector*boot_fat32.bpb_fat32.SectorsPerCluster;
+    ClusterEntrySize=4;
+
+    // FAT32 FAT Table
+    FSeek( FATTableFilePos );
+    FAT32_FAT_TABLE table(FATTableSizeInSectors,boot_fat32.bpb_fat32.NumberOfFATs);
+    
+    // FAT32 Directory Entry
+    FSeek( RootDirEntryFilePos );
+    FAT_DIRECTORY root_dir;
+
+} FAT32_DRIVE <open=true>;
+
+//################################################################
+// FAT Directory (Shared between FAT16 and FAT32)
+//################################################################
+
+// FAT Directory Attribute
+typedef enum <uchar>
+{
+    NoneOrFile              = 0,
+    ReadOnly                = 1, // bit0
+    Hidden                  = 2, // bit1
+    ReadOnlyHidden          = 3,
+    System                  = 4, // bit2
+    ReadOnlySystem          = 5,
+    HiddenSystem0           = 6,
+    ReadOnlyHiddenSystem    = 7,
+    VolumeID                = 8, // bit3
+    ReadOnlyVolume          = 9,
+    HiddenSystem1           = 10,
+    ReadOnlySystemVolume0   = 11,
+    SystemVolume            = 12,
+    ReadOnlySystemVolume1   = 13,
+    HiddenSystemVolume      = 14,
+    LFN_Entry               = 15,
+    Directory               = 16, // bit4
+    DirectoryHidden         = 18,
+    DirectoryHiddenSystem   = 23,
+    Archive                 = 32, // bit5
+    ArchiveReadOnly         = 33,
+    ArchiveHidden           = 34,
+    VolumeIDArchive         = 40,
+    DirectoryArchiveHidden  = 50
+}FAT_ATTR_TYPE;
+
+// FAT Short directory entry
+typedef struct // Normal-Short structure
+{
+    CHAR    Name[8]; // Blank-padded name
+    CHAR    Extension[3]; //Blank-padded extension
+    FAT_ATTR_TYPE Attribute; // See FAT_ATTR_TYPE enum only 5 valid bit (from 0 to 4)
+    UBYTE   Reserved;
+    UBYTE   CreateTime10ms; //10-ms units "Create Time" refinement
+    DOSTIME CreateTime;
+    DOSDATE CreateDate;
+    DOSDATE AccessDate;
+    USHORT  HighCluster; // Used on FAT32 only
+    DOSTIME UpdateTime;
+    DOSDATE UpdateDate;
+    USHORT  Cluster;
+    ULONG   FileSizeInBytes; //File size in bytes (always zero for directories).
+} FAT_SHORTENTRY <read=ReadFAT_SHORTENTRY>;
+
+string ReadFAT_SHORTENTRY( FAT_SHORTENTRY &f )
+{
+    string s;
+
+    if(f.Name[0]==0)
+    {
+        return "Last Dir Entry Empty";
+    }
+
+    // Short Entry 
+    if( (f.Attribute == NoneOrFile) ||
+        (f.Attribute == ReadOnly) ||
+        (f.Attribute == Hidden) ||
+        (f.Attribute == ReadOnlyHidden) ||
+        (f.Attribute == HiddenSystem1) ||
+        (f.Attribute == ReadOnlySystemVolume0) ||
+        (f.Attribute == LFN_Entry) ||
+        (f.Attribute == Archive) ||
+        (f.Attribute == ArchiveReadOnly) ||
+        (f.Attribute == ArchiveHidden) )
+    {
+        SPrintf(s, "%s.%s (%s)",f.Name,f.Extension,EnumToString(f.Attribute));
+    }
+    else
+    {
+        SPrintf(s, "%s%s (%s)",f.Name,f.Extension,EnumToString(f.Attribute));
+    }
+    if( (uchar)f.Name[0] == 0xE5 )
+        return "**Erased name:" + s;
+    else
+        return s;
+}
+
+typedef struct
+{
+    UBYTE   LFN_RecSeqNum : 6; // bit0-5 LFN sequence number (1..63)
+    UBYTE   Last_LFN_record : 1; // bit6 Last LFN record in the sequence
+    UBYTE   LFN_Erased : 1; // bit7 LFN record is an erased long name entry or maybe if it is part of an erased long name?
+}tLFN_RecordSeqNum;
+
+// FAT Long directory entry
+typedef struct
+{
+    typedef union ulfn
+    {
+        tLFN_RecordSeqNum  LFN_RecordSeqNum; // LFN Record Sequence Number
+        unsigned char char0;
+    }ULFN;
+    ULFN    LFN;
+    wchar_t UnicodeChar1[5]; //5 UNICODE characters, LFN first part.
+    FAT_ATTR_TYPE    Attribute; // This field contains the special value of 0Fh, which indicates an LFN entry.
+    UBYTE   Reserved;
+    UBYTE   ChkShortName; // Checksum of short name entry, used to validate that the LFN entry belongs to the short name entry following. According to Ralf Brown's interrupt list, the checksum is computed by adding up all the short name characters and rotating the intermediate value right by one bit position before adding each character.
+    wchar_t UnicodeChar2[6]; //6 UNICODE characters, LFN 2nd part.
+    USHORT  Cluster; //Initial cluster number, which is always zero for LFN entries.
+    wchar_t UnicodeChar3[2]; //2 UNICODE characters, LFN 3rd part.
+} FAT_LONGENTRY;
+
+struct FAT_FILE_DATA; // Forward definition
+
+// Move the read position to the start of the given cluster
+void FAT_JumpToCluster( DWORD cluster, int DriveNum )
+{
+    FSeek( drive[DriveNum].DataAreaFilePos + 
+        (cluster-2)*drive[DriveNum].ClusterSize );
+}
+
+// Return the cluster the address belongs to
+DWORD FAT_AddressToCluster( UQUAD address, int DriveNum )
+{
+    return (DWORD)((address - drive[DriveNum].DataAreaFilePos) / drive[DriveNum].ClusterSize) + 2;
+}
+
+// Special local variables used when defining FAT dir entries
+//  these are used because the dir entry may not be contiguous
+//  (in different clusters) 
+local UQUAD FATDirEntryStart;
+local UQUAD FATDirEntryEnd; // end of contiguous area
+local WORD  FATIsDirEntryContiguous;
+
+// Check for directory reads that go off the end of a cluster -
+//  need to jump to the next cluster if so
+void FAT_CheckDirEntryRead( int DriveNum )
+{
+    // Record positions
+    if( FATIsDirEntryContiguous )
+        FATDirEntryEnd = FTell();
+    FATDirEntryStart = FTell();
+    if( ((FATDirEntryStart - drive[DriveNum].DataAreaFilePos) % drive[DriveNum].ClusterSize == 0) &&
+        (FATDirEntryStart > drive[DriveNum].DataAreaFilePos) )
+    {
+        // Hit the end of the cluster - must jump to the next
+        //  cluster and mark as non-contiguous
+        FATIsDirEntryContiguous = false;
+        local DWORD Cluster = FAT_AddressToCluster( FATDirEntryStart, DriveNum ) - 1;
+        Cluster = drive[DriveNum].table.Cluster[ Cluster-2 ];
+        FAT_JumpToCluster( Cluster, DriveNum );
+        FATDirEntryStart = FTell();
+    }
+}
+
+// FAT Directory Entry
+typedef struct
+{
+    // Copy offset info from parent
+    local int   DriveNum = parentof(this).DriveNum; // keep track of which drive this belongs to
+    local int   i;
+    local DWORD Cluster;
+
+    // Read Long/Short directory entries
+    FATIsDirEntryContiguous = true;
+    if(ReadByte(FTell()+11)==0x0f)  // LFN Entry
+    {
+        local unsigned char NumberOfLFNEntry;
+        local unsigned char dirname0;
+        dirname0=ReadByte(FTell());
+        if( !(dirname0==0x00) )
+        {
+            if( dirname0==0xE5 )    // Empty/Erased
+            {
+                for(i=0;i<63;i++)
+                {
+                    dirname0=ReadByte(FTell());
+                    if( !(dirname0==0xE5) ) // Check still Empty/Erased ?
+                        break;
+                    
+                    if(ReadByte(FTell()+11)!=0x0f) // Check is still LFN ?
+                        break;
+    
+                    FAT_LONGENTRY long_entry;
+                    FAT_CheckDirEntryRead( DriveNum );
+                }
+            }
+            else
+            {
+                FAT_LONGENTRY long_entry;
+                NumberOfLFNEntry=long_entry.LFN.LFN_RecordSeqNum.LFN_RecSeqNum-1;
+                for(i=0;i<NumberOfLFNEntry;i++)
+                {
+                    FAT_LONGENTRY long_entry;
+                    FAT_CheckDirEntryRead( DriveNum );
+                }
+            }
+        }
+
+        // Long entries should be followed by a short entry with file info
+        if(ReadByte(FTell()+11)!=0x0f)
+        {
+            FAT_SHORTENTRY short_entry;
+            FAT_CheckDirEntryRead( DriveNum );
+        }
+    }
+    else
+    {
+        FAT_SHORTENTRY short_entry;
+        FAT_CheckDirEntryRead( DriveNum );
+    }
+
+    // Check for file data or subdirectory
+    if( exists(short_entry) )
+    {
+        Cluster = FAT_CalculateCluster( short_entry, DriveNum );
+        if( Cluster > 0 )
+        {
+            // Define data for this file
+            FAT_JumpToCluster( Cluster, DriveNum );
+            if( (uchar)short_entry.Name[0] == 0xE5) 
+                FAT_FILE_DATA possibleDeletedData; // try to show the deleted information - may not be accurate
+            else
+                FAT_FILE_DATA data;       
+    
+            // Define the sub-directory
+            if( (short_entry.Attribute & Directory) &&
+                (short_entry.Name != ".       ") && 
+                (short_entry.Name != "..      ") &&
+                ((uchar)short_entry.Name[0] != 0xE5) )
+            {
+                // Define a sub-directory
+                FAT_JumpToCluster( Cluster, DriveNum );
+                FAT_DIRECTORY sub_dir;
+            }
+        }
+    }
+
+    FSeek( FATDirEntryEnd );
+
+} FAT_DIR_ENTRY <read=ReadFAT_DIR_ENTRY>;
+
+// Show file name beside directory entry
+wstring ReadFAT_DIR_ENTRY( FAT_DIR_ENTRY &f )
+{
+    local unsigned short i;
+    local unsigned short NumberOfLFNEntry;
+    local wstring str;
+
+    if( exists( f.long_entry ) )
+    {
+        if(f.long_entry[0].LFN.LFN_RecordSeqNum.LFN_Erased==1)
+        {
+            // Entry deleted 
+            str+="**Erased name:";
+            // Count number of erased entry
+            for(i=0;i<63;i++)
+            {
+                if(exists(f.long_entry[i].LFN.char0))
+                {
+                    if(f.long_entry[i].LFN.char0!=0xE5)
+                    {
+                        break;
+                    }
+                }else
+                {
+                    break;
+                }
+            }
+            NumberOfLFNEntry=i-1;
+        }else
+        {
+            // Long Entry   
+            //str+="Name:";
+            NumberOfLFNEntry=f.long_entry[0].LFN.LFN_RecordSeqNum.LFN_RecSeqNum-1;
+        }
+        for(i=NumberOfLFNEntry;i>0;i--)
+        {
+            str+=f.long_entry[i].UnicodeChar1;
+            str+=f.long_entry[i].UnicodeChar2;
+            str+=f.long_entry[i].UnicodeChar3;
+        }
+        str+=f.long_entry[0].UnicodeChar1;
+        str+=f.long_entry[0].UnicodeChar2;
+        str+=f.long_entry[0].UnicodeChar3;
+
+        // End string at 0xFFFF 
+        local int endPos = WStrchr( str, 0xFFFF );
+        if( endPos != -1 )
+            str[endPos] = 0;
+
+        // Add attribute info
+        if( exists(f.short_entry) )
+        {
+            str += " (" + EnumToString(f.short_entry.Attribute) + ")";
+            if( (f.short_entry.Attribute & Directory) && ((UBYTE)f.short_entry.Name[0] != 0xE5) )
+                str = "/" + str;
+        }
+        return str;
+    }
+    else if( exists (f.short_entry) )
+    {
+        // Return text using just the short entry
+        str = ReadFAT_SHORTENTRY( f.short_entry );
+        if( (f.short_entry.Attribute & Directory) && ((UBYTE)f.short_entry.Name[0] != 0xE5) )
+            str = "/" + str;
+        return str;
+    }
+    else
+        return "";
+}
+
+// FAT Cluster of data in a file
+typedef struct (uint size, ULONG lengthLeft )
+{
+    if( (lengthLeft >= size) || (lengthLeft <= 0) )
+        UBYTE data[ size ];
+    else
+    {
+        UBYTE data[ lengthLeft ];
+        UBYTE slack[ size - lengthLeft ];
+    }
+} FAT_FILE_CLUSTER;
+
+// Extract starting cluster from a dir entry
+DWORD FAT_CalculateCluster( FAT_SHORTENTRY &entry, int DriveNum )
+{
+    if( drive[DriveNum].ClusterEntrySize == 4 )
+        return ((DWORD)entry.HighCluster << 16) | entry.Cluster; // fat32
+    else
+        return entry.Cluster; // fat16
+}
+
+// FAT File data displayed as clusters
+typedef struct
+{
+    local int    DriveNum         = parentof(this).DriveNum; // keep track of which drive this belongs to
+    local DWORD  ClusterSize      = drive[DriveNum].ClusterSize;
+    local DWORD  ClusterEntrySize = drive[DriveNum].ClusterEntrySize;
+    local DWORD  Cluster          = FAT_CalculateCluster( parentof(this).short_entry, DriveNum );
+    local DWORD  FirstCluster     = Cluster;
+    local DWORD  MaxCluster       = (ClusterEntrySize == 2) ? 0xFFF0 : 0x0FFFFFF0;
+    local ULONG  SizeLeft         = parentof(this).short_entry.FileSizeInBytes;
+
+    // Define clusters
+    while(1)
+    {
+        // Create one cluster
+        FAT_JumpToCluster( Cluster, DriveNum );
+        FAT_FILE_CLUSTER cluster( ClusterSize, SizeLeft );
+        if( SizeLeft < ClusterSize  )
+            SizeLeft = 0;
+        else
+            SizeLeft -= ClusterSize;
+
+        // Jump to the next cluster
+        Cluster = drive[DriveNum].table.Cluster[ Cluster-2 ];
+        if( (Cluster == 0) || (Cluster >= MaxCluster) || (Cluster == FirstCluster) )
+            break;
+    }
+
+} FAT_FILE_DATA <size=SizeFAT_FILE_DATA>;
+
+// Use on-demand parsing for file data - do not load the data until the hierarchy is opened.
+//  By default we just assume this is 1024 in length because the actual data may not
+//  be contiguous on disk.
+int SizeFAT_FILE_DATA( FAT_FILE_DATA &dir )
+{
+    return 1024;
+}
+
+// FAT Directory Entry List
+typedef struct
+{
+    local int DriveNum = parentof(this).DriveNum; // keep track of which drive this belongs to
+
+    // Define all file entries
+    FATDirEntryStart = FTell();
+    while(1)
+    {
+        FAT_DIR_ENTRY direntry;
+        if(direntry.short_entry.Name[0]==0) // End of Directory Entry
+            break;
+        FSeek( FATDirEntryStart ); // needed for non-contiguous directories
+    }
+} FAT_DIRECTORY <size=SizeFAT_DIRECTORY>;
+
+// Use on-demand parsing for directories - do not load the data until the hierarchy is opened.
+//  By default we just assume this is 1024 in length because the actual data may not
+//  be contiguous on disk.
+int SizeFAT_DIRECTORY( FAT_DIRECTORY &dir )
+{
+    return 1024;
+}
+
+//################################################################
+// NTFS Drives
+//################################################################
+
+// Forward definition
+struct NTFS_FILE_RECORD;
+
+// NTFS Boot sector
+struct NTFS_BOOTSECTOR
+{
+    BYTE   jmp[3];         // Jump Instruction
+    CHAR   OEMName[8];     // OEM Identifier
+    
+    typedef struct NTFS_BPB
+    {
+        WORD  BytesPerSector;
+        BYTE  SectorsPerCluster;
+        WORD  ReservedSectors;
+        UBYTE Zero[3];
+        WORD  NotUsed;
+        MEDIA MediaDescriptor <format=hex>;
+        WORD  Zero;
+        WORD  SectorsPerTrack;
+        WORD  HeadsPerCylinder;
+        DWORD HiddenSectors;
+        DWORD NotUsed;
+        DWORD NotUsed;
+        UQUAD TotalSectors;
+        UQUAD LogicalClusterMFT;
+        UQUAD LogicalClusterMFTMirror;
+        DWORD ClustersPerFileRecSegment;
+        DWORD ClustersPerIndexBlock;
+        UQUAD SerialNumber <format=hex>;
+        DWORD Checksum;
+    };
+    
+    NTFS_BPB bpb_ntfs;
+    BYTE   BootCode[426];
+    WORD   EndOfSectorMarker <format=hex>;
+};
+
+typedef enum <ulong>
+{
+    STANDARD_INFORMATION   = 0x10,
+    ATTRIBUTE_LIST         = 0x20,
+    FILE_NAME              = 0x30,
+    OBJECT_ID              = 0x40,
+    SECURITY_DESCRIPTOR    = 0x50,
+    VOLUME_NAME            = 0x60,
+    VOLUME_INFORMATION     = 0x70,
+    DATA                   = 0x80,
+    INDEX_ROOT             = 0x90,
+    INDEX_ALLOCATION       = 0xA0,
+    BITMAP                 = 0xB0,
+    REPARSE_POINT          = 0xC0,
+    EA_INFORMATION         = 0xD0,
+    EA                     = 0xE0,
+    PROPERTY_SET           = 0xF0,
+    LOGGED_UTILITY_STREAM  = 0x100
+} NTFS_ATTR_TYPE;
+
+// NTFS Standard Information
+typedef struct
+{
+    FILETIME    CreationTime;
+    FILETIME    ModifiedTime;
+    FILETIME    MFTChangedTime;
+    FILETIME    FileReadTime;
+    DWORD       DosPermissions;
+    DWORD       MaximumVersions;
+    DWORD       VersionNumber;
+    DWORD       ClassID;
+    DWORD       OwnerID;
+    DWORD       SecurityID;
+    UQUAD       QuotaCharged;
+    UQUAD       UpdateSequenceNumber;
+} NTFS_ATTR_STANDARD;
+
+// NTFS Namspace - type of file name
+typedef enum <UBYTE>
+{
+    NAMESPACE_POSIX     = 0,
+    NAMESPACE_WIN32     = 1,
+    NAMESPACE_DOS       = 2,
+    NAMESPACE_WIN32DOS  = 3
+} NTFS_NAMESPACE;
+
+// NTFS File Flags
+typedef struct
+{
+    DWORD    ReadOnly : 1;
+    DWORD    Hidden : 1;
+    DWORD    System : 1;
+    DWORD    : 1; // Unused
+    DWORD    : 1;
+    DWORD    Archive : 1;
+    DWORD    Device : 1;
+    DWORD    Normal : 1;
+    DWORD    Temp : 1;
+    DWORD    Sparse : 1;
+    DWORD    Reparse : 1;
+    DWORD    Compressed : 1;
+    DWORD    Offline : 1;
+    DWORD    NotIndexed : 1;
+    DWORD    Encrypted : 1;
+    DWORD    : 13;
+    DWORD    Directory : 1;
+    DWORD    IndexView : 1;
+} NTFS_FILE_FLAGS <read=ReadNTFS_FILE_FLAGS>;
+
+// Show some information beside the flag name
+string ReadNTFS_FILE_FLAGS( NTFS_FILE_FLAGS &flags )
+{
+    string s;
+    if( flags.Directory )
+        s += "Directory ";
+    if( flags.ReadOnly )
+        s += "ReadOnly ";
+    if( flags.Hidden )
+        s += "Hidden ";
+    if( flags.System )
+        s += "System ";
+    return s;
+}
+
+// NTFS File Name Information
+typedef struct
+{
+    local int64 start = FTell();
+    BitfieldDisablePadding();
+    UQUAD       FileRecordNumber : 48;
+    UQUAD       SequenceNumber : 16;    
+    BitfieldEnablePadding();
+    FILETIME    CreationTime;
+    FILETIME    ModifiedTime;
+    FILETIME    MFTChangedTime;
+    FILETIME    FileReadTime;
+    UQUAD       AllocateSize;
+    UQUAD       RealSize;
+    NTFS_FILE_FLAGS Flags;
+    DWORD       Reparse;
+    UBYTE       FileNameLength;
+    NTFS_NAMESPACE  Namespace; 
+    if( FileNameLength > 0 )
+        wchar_t     FileName[ FileNameLength ];
+} NTFS_ATTR_FILE_NAME;
+
+// NTFS Volume Name
+typedef struct (int length)
+{
+    wchar_t     VolumeName[length/2];
+} NTFS_ATTR_VOLUME_NAME;
+
+// NTFS Volume Information
+typedef struct
+{
+    UQUAD       Empty1;
+    UCHAR       MajorVersion;
+    UCHAR       MinorVersion;
+    WORD        Flags;
+    DWORD       Empty2;
+} NTFS_ATTR_VOLUME_INFO;
+
+// NTFS Index Root
+typedef struct
+{
+    DWORD       AttributeType;
+    DWORD       CollationRule;
+    DWORD       IndexAllocationEntrySize;
+    DWORD       ClustersPerIndexRecord;
+    DWORD       FirstIndexEntryOffset;
+    DWORD       IndexEntriesSize;
+    DWORD       IndexEntriesAllocated;
+    DWORD       HasLargeIndex : 1;
+    DWORD       : 31;
+} NTFS_ATTR_INDEX_ROOT;
+
+// NTFS Index Entry Header
+typedef struct
+{
+    UQUAD       FileRecordNumber : 48;
+    UQUAD       SequenceNumber : 16;    
+    WORD        IndexEntryLength;
+    WORD        StreamLength;
+    UBYTE       HasSubNode : 1;
+    UBYTE       IsLastEntry : 1;
+    UBYTE       : 6;
+    UBYTE       Padding[3];
+} NTFS_ATTR_INDEX_ENTRY_HEADER;
+
+// NTFS Index Entry
+typedef struct
+{
+    local int64 start = FTell();
+    NTFS_ATTR_INDEX_ENTRY_HEADER header;
+    if( !header.IsLastEntry && (header.StreamLength > 0) )
+        UBYTE   Stream[header.StreamLength];
+    if( header.HasSubNode )
+    {
+        FSeek( start + header.IndexEntryLength - 8 );
+        UQUAD   SubNode;
+    }
+
+    // Jump to the end of the record
+    FSeek( start + header.IndexEntryLength );
+} NTFS_ATTR_INDEX_ENTRY;
+
+// NTFS File Name Index Entry
+typedef struct
+{
+    local int64 start = FTell();
+    NTFS_ATTR_INDEX_ENTRY_HEADER header;
+    if( !header.IsLastEntry && (header.StreamLength > 0) )
+        NTFS_ATTR_FILE_NAME fileNameAttr;
+    if( header.HasSubNode )
+    {
+        FSeek( start + header.IndexEntryLength - 8 );
+        UQUAD   SubNode;
+    }
+
+    // Jump to the end of the record
+    FSeek( start + header.IndexEntryLength );
+} NTFS_INDEX_FILE_NAME_ENTRY <read=ReadNTFS_INDEX_FILE_NAME_ENTRY>;
+
+// Display file name and subnode beside index entry
+wstring ReadNTFS_INDEX_FILE_NAME_ENTRY( NTFS_INDEX_FILE_NAME_ENTRY &fn )
+{
+    string s;
+    if( exists( fn.fileNameAttr ) )
+        s = fn.fileNameAttr.FileName;
+    if( fn.header.HasSubNode )
+    {
+        string subnode;
+        SPrintf( subnode, " (Subnode %d)", fn.SubNode );
+        s += subnode;
+    }    
+    return s;
+}
+
+// NTFS Run - define a block of data (starting VCN and size)
+typedef struct
+{
+    UBYTE   LengthFieldSize : 4;
+    UBYTE   OffsetFieldSize : 4;
+    BitfieldDisablePadding();
+    UQUAD   RunLength : LengthFieldSize*8;
+    UQUAD   LCNOffset : OffsetFieldSize*8; // Logical Cluster Number
+    BitfieldEnablePadding();
+} NTFS_RUN;
+
+// NTFS Run list - define where file data exists on disk
+typedef struct ( UQUAD maxPos ) 
+{
+    while( (ReadUByte( FTell() ) != 0) && (FTell() < maxPos) )
+        NTFS_RUN run;
+} NTFS_RUN_LIST;
+
+// NTFS File Index
+typedef struct
+{
+    local int64 startPos = FTell();
+
+    struct NTFS_INDEX_HEADER {
+        UCHAR   Magic[4];
+        WORD    UpdateSequenceOffset;
+        WORD    UpdateSequenceSize;
+        UQUAD   LogFileSequence;
+        UQUAD   VCN; // Virtual Cluster Number
+        DWORD   IndexEntriesOffset;
+        DWORD   IndexEntriesSize;
+        DWORD   IndexEntriesAllocated;
+        DWORD   HasChildren;
+        WORD    UpdateSequence;
+        if( UpdateSequenceSize > 0 )
+            WORD    UpdateSequenceArray[UpdateSequenceSize];
+    } header;
+
+    // Create the list of file name entries here
+    if( header.Magic == "INDX" )
+    {
+        FSeek( startPos + 0x18 + header.IndexEntriesOffset );
+        local int i;
+        do
+        {
+            NTFS_INDEX_FILE_NAME_ENTRY entry;
+        } while( (!entry.header.IsLastEntry) &&
+                 (entry.header.IndexEntryLength > 0) &&
+                 (FTell() - startPos < header.IndexEntriesSize + header.IndexEntriesOffset) );
+    }
+
+} NTFS_FILE_INDEX;
+
+// Convert from an lcn (logical cluster number) to an address in the file
+UQUAD NTFS_LCNToAddress( UQUAD lcn, int DriveNum )
+{
+    return drive[DriveNum].DriveStart + lcn * drive[DriveNum].ClusterSize;
+}
+
+// NTFS File Block - store a block of data in a file
+typedef struct (int size, UQUAD lengthLeft)
+{
+    if( lengthLeft >= size )
+        UBYTE data[ size ];
+    else
+    {
+        UBYTE data[ lengthLeft ];
+        UBYTE slack[ size - lengthLeft ];
+    }
+} NTFS_FILE_BLOCK;
+
+// NTFS File data - stores information from the file on disk
+//  as a series of blocks - could be located in different places
+//  in the file. 
+typedef struct
+{
+    local int i;
+    local UQUAD vcn = 0;
+    local UQUAD RunLength;
+    local int DriveNum = parentof(parentof(parentof(this))).DriveNum;
+    local UQUAD LengthLeft = parentof(this).header.AttributeSize;
+    while( exists( parentof(this).runList.run[i] ) )
+    {
+        // Create the block of data using the run list
+        FSeek( NTFS_LCNToAddress( NTFS_VCNToLCN( parentof(this).runList, vcn ), DriveNum ) );
+        RunLength = parentof(this).runList.run[i].RunLength;
+        vcn += RunLength;
+        NTFS_FILE_BLOCK block( RunLength * drive[DriveNum].ClusterSize, LengthLeft );
+        LengthLeft -= RunLength * drive[DriveNum].ClusterSize;
+        i++;
+    }         
+} NTFS_FILE_DATA <size=1024>; // set size as 1024 as could be disjoint structures
+
+// NTFS Attribute
+typedef struct
+{
+    local int64 start = FTell();
+    struct NTFS_ATTRIBUTE_HEADER
+    {
+        NTFS_ATTR_TYPE Type;
+        DWORD          Length;
+        UBYTE          NonResident;
+        UBYTE          NameLength;
+        WORD           NameOffset;
+        WORD           IsCompressed : 1;
+        WORD           : 13;
+        WORD           IsEncrypted : 1;
+        WORD           IsSparse : 1;
+        WORD           AttributeID;
+        if( NonResident )
+        {
+            UQUAD   StartingVCN;
+            UQUAD   LastVCN;
+            WORD    DataRunsOffset;
+            WORD    CompressionUnitSize;
+            UBYTE   Padding[4];
+            UQUAD   AttributeAllocated;
+            UQUAD   AttributeSize;
+            UQUAD   StreamDataSize;
+        }
+        else
+        {
+            DWORD   AttributeLength;
+            WORD    AttributeOffset;
+            UBYTE   IndexedFlag;
+            UBYTE   Padding;
+        }
+        if( NameLength > 0 )
+            wchar_t Name[NameLength];
+    } header;
+
+    if( !header.NonResident )
+    {
+        // Resident attributes
+        if( header.Type == STANDARD_INFORMATION )
+            NTFS_ATTR_STANDARD standardInformation; 
+        else if( header.Type == FILE_NAME )
+            NTFS_ATTR_FILE_NAME fileName; 
+        else if( header.Type == VOLUME_NAME )
+            NTFS_ATTR_VOLUME_NAME volumeName( header.AttributeLength ); 
+        else if( header.Type == VOLUME_INFORMATION )
+            NTFS_ATTR_VOLUME_INFO volumeInfo; 
+        else if( header.Type == INDEX_ROOT )
+        {
+            // Stores the root nodes of the btree index for file names
+            NTFS_ATTR_INDEX_ROOT indexRoot;
+            do 
+            {
+                NTFS_INDEX_FILE_NAME_ENTRY indexEntry;
+            }
+            while( !indexEntry.header.IsLastEntry && 
+                   (indexEntry.header.IndexEntryLength > 0) &&
+                   (FTell() - start < header.Length) );
+        }
+        else if( header.Type == DATA )
+        {
+            // File data is stored directly in the header for small files
+            if( header.AttributeLength > 0 )
+                ubyte fileData[ header.AttributeLength ];
+        }
+    }
+    else
+    {
+        // Non-resident attribute - data is in a different place in the 
+        //  drive and use runlist to locate
+        NTFS_RUN_LIST runList( start + header.Length );
+        if( (header.Type == INDEX_ALLOCATION) && (parentof(this).header.IsDirectory) )
+        {
+            // Stores an index (btree) of file names
+            local int i;
+            for( i = 0; i <= header.LastVCN; i++ )
+            {
+                FSeek( NTFS_LCNToAddress( NTFS_VCNToLCN( runList, i ), parentof(parentof(this)).DriveNum ) );
+                if( ReadString( FTell(), 4 ) != "INDX" ) // make sure header is there
+                    break;
+                NTFS_FILE_INDEX index;
+            }
+        }
+        else if( exists(runList.run[0].LCNOffset) )
+        {
+            // Generic data - use the file data struct to read the data
+            FSeek( NTFS_LCNToAddress( runList.run[0].LCNOffset, parentof(parentof(this)).DriveNum ) );
+            NTFS_FILE_DATA data;
+        }
+    }
+        
+    // Jump to the end of the record
+    FSeek( start + header.Length );
+
+} NTFS_ATTRIBUTE <read=ReadNTFS_ATTRIBUTE>;
+
+// Display data beside the attribute
+string ReadNTFS_ATTRIBUTE( NTFS_ATTRIBUTE &attr )
+{
+    string s;
+    if( attr.header.Type == FILE_NAME )
+        SPrintf( s, "%s = %s", EnumToString( attr.header.Type ), attr.fileName.FileName );
+    else if( attr.header.Type == VOLUME_NAME )
+        SPrintf( s, "%s = %s", EnumToString( attr.header.Type ), attr.volumeName.VolumeName );
+    else
+        s = EnumToString( attr.header.Type );
+    if( attr.header.NonResident )
+        s += " (Non-Resident)";
+    return s;
+}
+
+// Used to sign-extend run values
+local UQUAD NTFS_SignExtend[8] = { 
+    0xffffffffffffff00,
+    0xffffffffffff0000,
+    0xffffffffff000000,
+    0xffffffff00000000,
+    0xffffff0000000000,
+    0xffff000000000000,
+    0xff00000000000000,
+    0x0000000000000000
+};
+
+// Function to convert from a virtual cluster number (file cluster number)
+// to a logical cluster number (drive cluster number). The file contains a 
+// number of runs and check which run the vcn belongs to.
+UQUAD NTFS_VCNToLCN( NTFS_RUN_LIST &runlist, UQUAD vcn )
+{
+    local int i;
+    local UQUAD offset = 0;
+    while( exists( runlist.run[i] ) )
+    {
+        // Move ahead using LCNOffset
+        if( ReadUByte( startof(runlist.run[i].LCNOffset)+runlist.run[i].OffsetFieldSize-1 ) >= 0x80 )
+        {
+            // Offset is negative - sign extend
+            offset += (QUAD)(runlist.run[i].LCNOffset + NTFS_SignExtend[runlist.run[i].OffsetFieldSize-1] );
+        }
+        else
+        {
+            // Offset is positive
+            offset += runlist.run[i].LCNOffset;
+        }
+
+        // Check if vcn is in this run
+        if( vcn < runlist.run[i].RunLength )
+            return vcn + offset;
+        else
+        {
+            vcn -= runlist.run[i].RunLength;
+            i++;
+        }
+    }
+    return 0xFFFFFFFFFFFFFFFFL; // not found
+}
+
+// Function to iterate through the file name index (btree) 
+//  and list the files
+UQUAD NTFS_ListFiles( NTFS_INDEX_FILE_NAME_ENTRY &entry, NTFS_ATTRIBUTE &allocation, int DriveNum, int level, UQUAD previousFile )
+{
+    // Step into sub-node - watch for infinite recursion
+    local int k = 0;
+    if( entry.header.HasSubNode && (level < 10) )
+    {
+        while( 1 )
+        {
+            previousFile = NTFS_ListFiles( allocation.index[ entry.SubNode ].entry[k], allocation, DriveNum, level+1, previousFile );
+            if( allocation.index[ entry.SubNode ].entry[k].header.IsLastEntry )
+                break;
+            k++;
+        }
+    }
+
+    // Create file record
+    if( entry.header.StreamLength > 0 )
+    {
+        // Avoid creating the same file twice
+        if( previousFile != entry.header.FileRecordNumber )
+        {
+            // Locate the file position - have to use the runlist of the mft
+            previousFile = entry.header.FileRecordNumber;
+            local int dataAttr = NTFS_FindAttribute( drive[DriveNum].mft.mft[0], DATA );
+            local int fileRecsPerCluster = drive[DriveNum].ClusterSize / 1024;
+            local UQUAD lcn = NTFS_VCNToLCN( drive[DriveNum].mft.mft[0].attribute[dataAttr].runList, entry.header.FileRecordNumber/fileRecsPerCluster );
+            FSeek( NTFS_LCNToAddress( lcn, DriveNum ) + (entry.header.FileRecordNumber % fileRecsPerCluster)*1024 );
+            if( ReadString( FTell(), 4 ) == "FILE" ) // make sure header is there
+                NTFS_FILE_RECORD file;
+            else
+                DWORD invalid; // file record not found
+        }
+    }
+    return previousFile;
+}
+
+// Find an attribute in a file record
+int NTFS_FindAttribute( NTFS_FILE_RECORD &rec, NTFS_ATTR_TYPE type )
+{
+    local int i;
+    while( exists(rec.attribute[i]) )
+    {
+        if( rec.attribute[i].header.Type == type )
+            return i;
+        i++;
+    }
+    return -1; // not found
+}
+
+// NTFS Directory
+typedef struct
+{
+    local int   DriveNum      = parentof(parentof(this)).DriveNum; // keep track of which drive this belongs to
+    local int   dirRoot       = NTFS_FindAttribute( parentof(this), INDEX_ROOT );
+    local int   dirAllocation = NTFS_FindAttribute( parentof(this), INDEX_ALLOCATION );
+    local UQUAD previousFile = 0xFFFFFFFFFFFFFFFFL;
+    local int   i = 0;
+    local int64 start = FTell();
+    while( 1 )
+    {
+        // Iterate through the b-tree index and create the list of files
+        if( dirAllocation < 0 )
+            dirAllocation = 0; // no allocation - everything stored in INDEX_ROOT
+        previousFile = NTFS_ListFiles( parentof(this).attribute[dirRoot].indexEntry[i], attribute[dirAllocation], DriveNum, 0, previousFile );
+        if( parentof(this).attribute[dirRoot].indexEntry[i].header.IsLastEntry )
+            break;            
+        i++;
+    }
+    FSeek( start + 1024 );
+
+} NTFS_DIRECTORY <size=1024>;
+
+// NTFS File Record
+typedef struct 
+{
+    local int64 start = FTell();
+
+    // Header info
+    struct FILE_RECORD_HEADER_NTFS
+    {
+        BYTE    Magic[4];
+        WORD    UpdateSequenceOffset;
+        WORD    UpdateSequenceSize;
+        UQUAD   LogFileSequenceNumber;
+        WORD    SequenceNumber;
+        WORD    HardLinkCount;
+        WORD    FirstAttributeOffset;
+        WORD    InUse : 1;
+        WORD    IsDirectory : 1;
+        DWORD   UsedSize;
+        DWORD   AllocateSize;
+        UQUAD   FileReference;
+        WORD    NextAttributeID;
+        WORD    Align;
+        DWORD   MFTRecordNumber;
+        UBYTE   EndTag[2];
+        UBYTE   FixupArray[6];
+    } header;
+
+    // Check header
+    if( header.Magic != "FILE" )
+        return;
+
+    // Read list of attributes
+    while( (ReadUInt(FTell()) != 0xffffffff) && (FTell() - start < 1024) )
+        NTFS_ATTRIBUTE attribute;
+
+    // Add padding if necessary
+    if( FTell() - start < 1024 )
+        UBYTE padding[ 1024 - (FTell() - start) ];
+
+    // Check if this is a directory
+    local int attrRoot = NTFS_FindAttribute( this, INDEX_ROOT );
+    if( (attrRoot >= 0) && (header.IsDirectory) )
+    {
+        FSeek( start );
+        NTFS_DIRECTORY sub_dir;
+    }
+
+    // Jump to the end of the record
+    FSeek( start + 1024 );
+
+} NTFS_FILE_RECORD <read=ReadNTFS_FILE_RECORD>; //, size=1024>;
+
+// Display file name beside the file record
+wstring ReadNTFS_FILE_RECORD( NTFS_FILE_RECORD &fr )
+{
+    string name;
+    local int attrNum = NTFS_FindAttribute( fr, FILE_NAME );
+    if( attrNum != -1 )
+    {
+        // Skip short DOS names
+        if( (fr.attribute[attrNum].fileName.Namespace == NAMESPACE_DOS) &&
+            exists( fr.attribute[attrNum+1].fileName.FileName ) )
+            attrNum++;
+        name = fr.attribute[attrNum].fileName.FileName;
+
+        // Check for hidden, system
+        local int hidden = fr.attribute[attrNum].fileName.Flags.Hidden;
+        local int system = fr.attribute[attrNum].fileName.Flags.System;
+        if( hidden || system )
+        {
+            name += " (";
+            if( hidden )
+            {
+                name += "Hidden";
+                if( system )
+                    name += " ";
+            }
+            if( system )
+                name += "System";
+            name += ")";
+        }
+
+        // Check if this is a directory
+        if( fr.header.IsDirectory )
+            name = "/" + name;
+
+        // Check if this is deleted
+        if( !fr.header.InUse )
+            name = "**Erased name:" + name;
+    }
+    return name;
+}
+
+// NTFS Master File Table (MFT)
+typedef struct
+{
+    local int DriveNum = parentof(this).DriveNum; // keep track of which drive this belongs to
+    NTFS_FILE_RECORD mft[16] <optimize=false>;
+} NTFS_MASTER_FILE_TABLE <read=ReadNTFS_MASTER_FILE_TABLE>;
+
+// Display the volume label beside the master file table
+string ReadNTFS_MASTER_FILE_TABLE( NTFS_MASTER_FILE_TABLE &mft )
+{
+    if( exists( mft.mft[3] ) )
+    {
+        local int volAttr = NTFS_FindAttribute( mft.mft[3], VOLUME_NAME );
+        if( volAttr != -1 )
+            return mft.mft[3].attribute[ volAttr ].volumeName.VolumeName;
+    }
+    return "";
+}
+
+// Define an NTFS Drive
+typedef struct
+{
+    local int   DriveNum   = NumDrives++; // keep track of the index of this drive
+    local int64 DriveStart = FTell();
+    local DWORD ClusterSize;
+
+    // NTFS Boot sector
+    NTFS_BOOTSECTOR boot_ntfs <bgcolor=cLtPurple>;
+
+    // Master File Table (MFT)
+    ClusterSize = boot_ntfs.bpb_ntfs.BytesPerSector * boot_ntfs.bpb_ntfs.SectorsPerCluster;
+    FSeek( DriveStart + boot_ntfs.bpb_ntfs.LogicalClusterMFT * ClusterSize );
+    NTFS_MASTER_FILE_TABLE mft;
+
+    // Root directory - jump to '.' in the master file table
+    //  this is repeated from the mft but makes it easier to find here
+    FSeek( startof(mft) + 5*1024 );
+    NTFS_FILE_RECORD root_dir;
+
+} NTFS_DRIVE <open=true>;
+
+//################################################################
+// HFS Drives (macOS/iOS)
+//################################################################
+
+typedef char   SInt8;
+typedef uchar  UInt8;
+typedef int16  SInt16;
+typedef uint16 UInt16;
+typedef int32  SInt32;
+typedef uint32 UInt32;
+typedef int64  SInt64;
+typedef uint64 UInt64;
+
+// HFS block of data in a file
+struct HFS_ExtentDescriptor 
+{
+    UInt32                  startBlock;
+    UInt32                  blockCount;
+};
+
+// HFS describes the location of file data
+struct HFS_ForkData 
+{
+    UInt64                  logicalSize;
+    UInt32                  clumpSize;
+    UInt32                  totalBlocks;
+    HFS_ExtentDescriptor    extents[8];
+};
+
+// HFS_Time - 32-bit integer, number of seconds since 01/01/1904 00:00:00
+typedef uint HFS_Time <read=HFSTimeRead, write=HFSTimeWrite>;
+string HFSTimeRead( HFS_Time t )
+{   
+    // Convert to FILETIME
+    if( t == 0 )
+        return "-";
+    else
+        return FileTimeToString( t*10000000L + 95616288000000000L );
+}
+int HFSTimeWrite( HFS_Time &t, string value )
+{
+    // Convert from FILETIME
+    FILETIME ft;
+    int result = StringToFileTime( value, ft );
+    t = (int)(((uint64)ft - 95616288000000000L)/10000000L);
+    return result;
+}
+
+// HFS Catalog Node ID number
+typedef enum <UInt32> {
+    kHFSRootParentID            = 1,
+    kHFSRootFolderID            = 2,
+    kHFSExtentsFileID           = 3,
+    kHFSCatalogFileID           = 4,
+    kHFSBadBlockFileID          = 5,
+    kHFSAllocationFileID        = 6,
+    kHFSStartupFileID           = 7,
+    kHFSAttributesFileID        = 8,
+    kHFSRepairCatalogFileID     = 14,
+    kHFSBogusExtentFileID       = 15,
+    kHFSFirstUserCatalogNodeID  = 16
+} HFS_CatalogNodeID;
+
+// HFS Record type
+typedef enum <SInt16> {
+    kHFSFolderRecord        = 0x0001,
+    kHFSFileRecord          = 0x0002,
+    kHFSFolderThreadRecord  = 0x0003,
+    kHFSFileThreadRecord    = 0x0004
+} HFS_RecordType;
+
+// HFS Volume information
+struct HFS_VolumeHeader 
+{
+    uchar               reserved[1024];
+    char                signature[2];
+    UInt16              version;
+    UInt32              attributes;
+    char                lastMountedVersion[4];
+    UInt32              journalInfoBlock;
+    HFS_Time            createDate;
+    HFS_Time            modifyDate;
+    HFS_Time            backupDate;
+    HFS_Time            checkedDate;
+    UInt32              fileCount;
+    UInt32              folderCount;
+    UInt32              blockSize;
+    UInt32              totalBlocks;
+    UInt32              freeBlocks;
+    UInt32              nextAllocation;
+    UInt32              rsrcClumpSize;
+    UInt32              dataClumpSize;
+    HFS_CatalogNodeID   nextCatalogID;
+    UInt32              writeCount;
+    UInt64              encodingsBitmap;
+    UInt32              finderInfo[8];
+    HFS_ForkData        allocationFile;
+    HFS_ForkData        extentsFile;
+    HFS_ForkData        catalogFile;
+    HFS_ForkData        attributesFile;
+    HFS_ForkData        startupFile;
+};
+
+// HFS Unicode string
+struct HFS_UniStr255 
+{
+    UInt16  length;
+    if( length > 0 )
+        wchar_t unicode[length];
+};
+
+// HFS Unix style permissions
+struct HFS_BSDInfo 
+{
+    UInt32  ownerID;
+    UInt32  groupID;
+    UInt8   adminFlags;
+    UInt8   ownerFlags;
+    UInt16  fileMode <format=octal>;
+    union {
+        UInt32  iNodeNum;
+        UInt32  linkCount;
+        UInt32  rawDevice;
+    } special;
+};
+
+// HFS 2d point
+struct HFS_Point 
+{
+    SInt16          v;
+    SInt16          h;
+};
+
+typedef char HFS_OSType[4];
+
+// HFS File information
+struct HFS_FileInfo 
+{
+    HFS_OSType      fileType;           // The type of the file
+    HFS_OSType      fileCreator;        // The file's creator
+    UInt16          finderFlags;
+    HFS_Point       location;           // File's location in the folder.
+    UInt16          reservedField;
+};
+
+// HFS Extended file information
+struct HFS_ExtendedFileInfo 
+{
+    SInt16    reserved1[4];
+    UInt16    extendedFinderFlags;
+    SInt16    reserved2;
+    SInt32    putAwayFolderID;
+};
+
+// HFS rectangle
+struct HFS_Rect 
+{
+    SInt16    top;
+    SInt16    left;
+    SInt16    bottom;
+    SInt16    right;
+};
+
+// HFS Folder information
+struct HFS_FolderInfo 
+{
+    HFS_Rect  windowBounds;       // The position and dimension of the folder's window
+    UInt16    finderFlags;
+    HFS_Point location;           // Folder's location in the parent
+                                  // folder. If set to {0, 0}, the Finder
+                                  // will place the item automatically
+    UInt16    reservedField;
+};
+
+// HFS Extended folder information
+struct HFS_ExtendedFolderInfo 
+{
+    HFS_Point scrollPosition;     // Scroll position (for icon views)
+    SInt32    reserved1;
+    UInt16    extendedFinderFlags;
+    SInt16    reserved2;
+    SInt32    putAwayFolderID;
+};
+
+// HFS - Key information for a node stored in the catalog btree
+typedef struct 
+{
+    UInt16              keyLength;
+    HFS_CatalogNodeID   parentID;
+    HFS_UniStr255       nodeName;
+} HFS_CatalogKey <read=ReadHFSCatalogKey>;
+wstring ReadHFSCatalogKey( HFS_CatalogKey &key )
+{
+    if( key.nodeName.length > 0 )
+        return key.nodeName.unicode;
+    return "";
+}
+
+// HFS - Folder information stored in the catalog
+typedef struct
+{
+    HFS_RecordType          recordType;
+    UInt16                  flags;
+    UInt32                  valence;
+    HFS_CatalogNodeID       folderID;
+    HFS_Time                createDate;
+    HFS_Time                contentModDate;
+    HFS_Time                attributeModDate;
+    HFS_Time                accessDate;
+    HFS_Time                backupDate;
+    HFS_BSDInfo             permissions;
+    HFS_FolderInfo          userInfo;
+    HFS_ExtendedFolderInfo  finderInfo;
+    UInt32                  textEncoding;
+    UInt32                  reserved;
+} HFS_CatalogFolder;
+
+// Forward definitions
+struct HFS_BTNode;
+struct HFS_Folder;
+struct HFS_File;
+
+// HFS - Function to iterate through the btree and list all folders and 
+//  files with the given parent id
+void HFS_ListFilesInNode( HFS_BTNode &node, uint folderID )
+{
+    local int i, type;
+    local int64 pos;
+    local uint  nextID;
+    local int   count = node.descriptor.numRecords;
+    if( node.descriptor.kind == kBTIndexNode )
+    {
+        // Traverse down the index nodes looking for the proper parent id
+        for( i = 0; i < count; i++ )
+        {
+            if( i < count-1 )
+                nextID = node.record[i+1].key.parentID;
+            else
+                nextID = 0xffffffff;
+            if( (node.record[i].key.parentID <= folderID) && (folderID <= nextID) )
+            {
+                // Traverse down this node
+                if( exists( node.record[i].childNode ) )
+                    HFS_ListFilesInNode( node.record[i].childNode, folderID );
+            }
+            else if( node.record[i].key.parentID > folderID )
+                break;
+        }
+    }
+    else if( node.descriptor.kind == kBTLeafNode )
+    {
+        // Create a copy of all folders and files for the directory structure
+        for( i = 0; i < node.descriptor.numRecords; i++ )
+        {
+            if( exists( node.record[i] ) )
+            {
+                if( node.record[i].key.parentID == folderID )
+                {
+                    pos = startof( node.record[i] );
+                    FSeek( pos );
+                    BigEndian();
+                    type = ReadUShort( pos + ReadUShort( pos+6 )*2 + 8 );
+                    if( type == kHFSFolderRecord )
+                        HFS_Folder folder;
+                    else if( type == kHFSFileRecord )
+                        HFS_File file;
+                    LittleEndian();
+                }    
+            }
+        }
+    }
+}
+void HFS_ListFiles( int DriveNum, uint folderID )
+{
+    HFS_ListFilesInNode( drive[DriveNum].btree.rootNode, folderID );
+}
+
+// HFS List of files and subfolders inside a folder
+typedef struct
+{
+    local int DriveNum = parentof(this).DriveNum;
+    local int64 pos = FTell();
+    BigEndian();
+    HFS_ListFiles( parentof(this).DriveNum, parentof(this).folderInfo.folderID );
+    FSeek( pos+4 );
+    LittleEndian();
+} HFS_FolderList <size=4>; //use on-demand - size unknown
+
+// HFS - Folder stored in the catalog
+typedef struct
+{
+    local int DriveNum = parentof(this).DriveNum;
+    HFS_CatalogKey      key;
+    HFS_CatalogFolder   folderInfo;
+
+    // Store link to all files in this folder
+    local int64 pos = FTell();
+    HFS_FolderList  subDir;
+    FSeek( pos );
+} HFS_Folder <read=ReadHFSFolder>;
+wstring ReadHFSFolder( HFS_Folder &rec )
+{
+    if( rec.key.nodeName.length > 0 )
+        return "/" + rec.key.nodeName.unicode;
+    return "";
+}
+
+// HFS - File information stored in the catalog
+typedef struct
+{
+    HFS_RecordType          recordType;
+    UInt16                  flags;
+    UInt32                  reserved1;
+    HFS_CatalogNodeID       fileID;
+    HFS_Time                createDate;
+    HFS_Time                contentModDate;
+    HFS_Time                attributeModDate;
+    HFS_Time                accessDate;
+    HFS_Time                backupDate;
+    HFS_BSDInfo             permissions;
+    HFS_FileInfo            userInfo;
+    HFS_ExtendedFileInfo    finderInfo;
+    UInt32                  textEncoding;
+    UInt32                  reserved2;
+    HFS_ForkData            dataFork;
+    HFS_ForkData            resourceFork;
+} HFS_CatalogFile;
+
+// HFS - Block of data in a file
+typedef struct (int size, uint64 lengthLeft)
+{
+    if( lengthLeft >= size )
+        UBYTE data[ size ];
+    else
+    {
+        UBYTE data[ lengthLeft ];
+        UBYTE slack[ size - lengthLeft ];
+    }
+} HFS_FileBlock;
+
+// HFS File Data - list as a series of blocks
+typedef struct
+{
+    local int DriveNum = parentof(this).DriveNum;
+    local int LengthLeft = parentof(this).fileInfo.dataFork.logicalSize;
+    local int blockSize = drive[DriveNum].header.blockSize;
+    local int i, size;
+    local int64 pos = FTell();
+    BigEndian();
+    for( i = 0; i < 8; i++ )
+    {
+        // Create a block at this extents
+        size = parentof(this).fileInfo.dataFork.extents[i].blockCount * blockSize;
+        if( size == 0 )
+            break;
+        FSeek( HFS_BlockToAddress( DriveNum, parentof(this).fileInfo.dataFork.extents[i].startBlock ) );
+        HFS_FileBlock block( size, LengthLeft );
+        LengthLeft -= size;
+        if( LengthLeft <= 0 )
+            break;
+    }
+
+    // NOTE: In the future we could read from the extents overflow file for
+    //  data files that have more than 8 extents
+    FSeek( pos+512 );
+    LittleEndian();
+} HFS_FileData <size=512>; //use on-demand - size unknown
+
+// HFS - File stored in the catalog
+typedef struct
+{
+    local int DriveNum = parentof(this).DriveNum;
+    HFS_CatalogKey          key;
+    HFS_CatalogFile         fileInfo;
+
+    // Store the file data is a set of blocks
+    if( fileInfo.dataFork.logicalSize > 0 )
+    {
+        local int64 pos = FTell();
+        FSeek( HFS_BlockToAddress( DriveNum, fileInfo.dataFork.extents[0].startBlock ) );
+        HFS_FileData  fileData;
+        FSeek( pos );
+    }
+} HFS_File <read=ReadHFSFile>;
+wstring ReadHFSFile( HFS_File &rec )
+{
+    if( rec.key.nodeName.length > 0 )
+        return rec.key.nodeName.unicode;
+    return "";
+}
+
+// HFS - Index record in the catalog
+typedef struct 
+{
+    local int DriveNum = parentof(this).DriveNum;
+    HFS_CatalogKey      key;
+    UInt32              link;
+
+    // Store on-demand child node
+    local int64 pos = FTell();
+    if( HFS_JumpToCatalogNode( DriveNum, link ) )
+        HFS_BTNode          childNode;
+    FSeek( pos );
+} HFS_CatalogRecord <read=ReadHFSCatalogRecord>;
+wstring ReadHFSCatalogRecord( HFS_CatalogRecord &rec )
+{
+    if( rec.key.nodeName.length > 0 )
+        return rec.key.nodeName.unicode;
+    return "";
+}
+
+// HFS Node kind
+typedef enum <SInt8> {
+    kBTLeafNode       = -1,
+    kBTIndexNode      =  0,
+    kBTHeaderNode     =  1,
+    kBTMapNode        =  2
+} HFS_NodeKind;
+
+// HFS Descriptor for each node of the btree
+struct HFS_BTNodeDescriptor 
+{
+    UInt32        fLink;
+    UInt32        bLink;
+    HFS_NodeKind  kind;
+    UInt8         height;
+    UInt16        numRecords;
+    UInt16        reserved;
+};
+
+// HFS Main information for the btree header node
+struct HFS_BTHeaderRec 
+{
+    UInt16    treeDepth;
+    UInt32    rootNode;
+    UInt32    leafRecords;
+    UInt32    firstLeafNode;
+    UInt32    lastLeafNode;
+    UInt16    nodeSize;
+    UInt16    maxKeyLength;
+    UInt32    totalNodes;
+    UInt32    freeNodes;
+    UInt16    reserved1;
+    UInt32    clumpSize;      // misaligned
+    UInt8     btreeType;
+    UInt8     keyCompareType;
+    UInt32    attributes;     // long aligned again
+    UInt32    reserved3[16];
+};
+
+// HFS Header node of the btree
+struct HFS_BTHeaderNode 
+{
+    HFS_BTNodeDescriptor descriptor;
+    HFS_BTHeaderRec      header;
+    UInt8                userDataRecord[128];
+    UInt8                map[ header.nodeSize - 256 ];
+    UInt16               offsets[4];
+};
+
+// HFS Node of the btree
+typedef struct 
+{
+    local int j;
+    local int64 startPos = FTell();
+    local SInt16 recordType;
+
+    // Node descriptor
+    BigEndian();
+    HFS_BTNodeDescriptor  descriptor;
+    local int DriveNum = parentof(parentof(descriptor)).DriveNum;
+    local int NodeSize = drive[DriveNum].btree.headerNode.header.nodeSize;
+
+    // Create each record of the node
+    for( j = 0; j < descriptor.numRecords; j++ )
+    {
+        FSeek( startPos + ReadUShort(startPos + NodeSize - 2 - j*2) );
+        if( descriptor.kind == kBTIndexNode )
+        {
+            // Create index nodes
+            HFS_CatalogRecord record;
+        }
+        else if( descriptor.kind == kBTLeafNode )
+        {
+            // Create leaf nodes - either file or folder
+            recordType = ReadUShort( FTell() + ReadUShort( FTell()+6 )*2 + 8 );
+            if( recordType == kHFSFolderRecord )
+                HFS_Folder record;
+            else if( recordType == kHFSFileRecord )
+                HFS_File record;
+        }
+    }
+    LittleEndian();
+} HFS_BTNode <size=8192>; // use on-demand structure
+
+// HFS - Function to convert from a local block number to a drive block number using the extents
+int64 HFS_LocalToDriveBlock( HFS_ForkData &fork, int64 localBlock )
+{
+    // Search through the extents to find where this block is
+    local int   i;
+    for( i = 0; i < 8; i++ )
+    {
+        if( localBlock < fork.extents[i].blockCount )
+            return fork.extents[i].startBlock + localBlock;
+        else
+            localBlock -= fork.extents[i].blockCount;
+    }
+
+    // Not found - could look in the extents overflow in the future
+    return -1;
+}
+
+// HFS - Function to seek to a particular catalog node - return true if successful
+int HFS_JumpToCatalogNode( int DriveNum, int NodeNum )
+{
+    local int blockSize = drive[DriveNum].header.blockSize;
+    local int nodeSize  = drive[DriveNum].btree.headerNode.header.nodeSize;
+    local int64 pos   = (int64)nodeSize * NodeNum;
+    local int64 localBlock = pos / blockSize;
+    local int64 driveBlock = HFS_LocalToDriveBlock( drive[DriveNum].header.catalogFile, localBlock );
+    if( driveBlock < 0 )
+        return false;
+    FSeek( drive[DriveNum].DriveStart + driveBlock*blockSize );
+    return true;
+}
+
+// HFS - Function to convert from a block to an address
+int64 HFS_BlockToAddress( int DriveNum, int64 block )
+{
+    return drive[DriveNum].DriveStart + block*drive[DriveNum].header.blockSize;
+}
+
+// HFS Catalog - stored as a btree
+typedef struct
+{
+    local int   DriveNum = parentof(this).DriveNum; // keep track of which drive this belongs to
+    local int64 startPos = FTell();
+
+    // Define the header node
+    HFS_BTHeaderNode headerNode;
+
+    // Define the root node
+    if( HFS_JumpToCatalogNode( DriveNum, headerNode.header.rootNode ) )
+        HFS_BTNode rootNode;
+} HFS_Catalog;
+
+// Define an HFS drive
+typedef struct
+{
+    local int   DriveNum   = NumDrives++; // keep track of the index of this drive
+    local int64 DriveStart = FTell();
+
+    // Define the drive header
+    BigEndian();
+    HFS_VolumeHeader header <bgcolor=cLtPurple>;
+    
+    // Define the file catalog - stored as a btree
+    FSeek( DriveStart + header.catalogFile.extents[0].startBlock * header.blockSize );
+    HFS_Catalog btree;
+
+    // Define the root directory
+    HFS_ListFiles( DriveNum, kHFSRootParentID );
+    LittleEndian();
+
+} HFS_DRIVE <open=true>;
+
+
+
+//################################################################
+// Ext Partition
+//################################################################
+
+typedef struct
+{
+    uint32	s_inodes_count;		/* Inodes count */
+    uint32	s_blocks_count;		/* Blocks count */
+    uint32	s_r_blocks_count;	/* Reserved blocks count */
+    uint32	s_free_blocks_count;	/* Free blocks count */
+    uint32	s_free_inodes_count;	/* Free inodes count */
+    uint32	s_first_data_block;	/* First Data Block */
+    uint32	s_log_block_size;	/* Block size */
+    int32     s_log_frag_size;	/* Fragment size */
+    uint32	s_blocks_per_group;	/* # Blocks per group */
+    uint32	s_frags_per_group;	/* # Fragments per group */
+    uint32	s_inodes_per_group;	/* # Inodes per group */
+    uint32	s_mtime;		/* Mount time */
+    uint32	s_wtime;		/* Write time */
+    uint16	s_mnt_count;		/* Mount count */
+    int16     s_max_mnt_count;	/* Maximal mount count */
+    uint16	s_magic;		/* Magic signature */
+    uint16	s_state;		/* File system state */
+    uint16	s_errors;		/* Behaviour when detecting errors */
+    uint16	s_minor_rev_level; 	/* minor revision level */
+    uint32	s_lastcheck;		/* time of last check */
+    uint32	s_checkinterval;	/* max. time between checks */
+    uint32	s_creator_os;		/* OS */
+    uint32	s_rev_level;		/* Revision level */
+    uint16	s_def_resuid;		/* Default uid for reserved blocks */
+    uint16	s_def_resgid;		/* Default gid for reserved blocks */
+
+    uint32	s_first_ino; 		/* First non-reserved inode */
+    uint16   s_inode_size; 		/* size of inode structure */
+    uint16	s_block_group_nr; 	/* block group # of this superblock */
+    uint32	s_feature_compat; 	/* compatible feature set */
+    uint32	s_feature_incompat; 	/* incompatible feature set */
+    uint32	s_feature_ro_compat; 	/* readonly-compatible feature set */
+    uchar	s_uuid[16];		/* 128-bit uuid for volume */
+    char	s_volume_name[16]; 	/* volume name */
+    char	s_last_mounted[64]; 	/* directory where last mounted */
+    uint32	s_algorithm_usage_bitmap; /* For compression */
+    /*
+     * Performance hints.  Directory preallocation should only
+     * happen if the EXT2_COMPAT_PREALLOC flag is on.
+     */
+    uchar	s_prealloc_blocks;	/* Nr of blocks to try to preallocate*/
+    uchar	s_prealloc_dir_blocks;	/* Nr to preallocate for dirs */
+    uint16	s_reserved_gdt_blocks;	/* Per group table for online growth */
+    /*
+     * Journaling support valid if EXT2_FEATURE_COMPAT_HAS_JOURNAL set.
+     */
+    uchar		s_journal_uuid[16];	/* uuid of journal superblock */
+    uint32	s_journal_inum;		/* inode number of journal file */
+    uint32	s_journal_dev;		/* device number of journal file */
+    uint32	s_last_orphan;		/* start of list of inodes to delete */
+    uint32	s_hash_seed[4];		/* HTREE hash seed */
+    uchar	s_def_hash_version;	/* Default hash version to use */
+    uchar		s_jnl_backup_type; 	/* Default type of journal backup */
+    uint16	s_desc_size;		/* Group desc. size: INCOMPAT_64BIT */
+    uint32	s_default_mount_opts;
+    uint32	s_first_meta_bg;	/* First metablock group */
+    uint32	s_mkfs_time;		/* When the filesystem was created */
+    uint32	s_jnl_blocks[17]; 	/* Backup of the journal inode */
+    uint32	s_blocks_count_hi;	/* Blocks count high 32bits */
+    uint32	s_r_blocks_count_hi;	/* Reserved blocks count high 32 bits*/
+    uint32	s_free_blocks_hi; 	/* Free blocks count */
+    uint16	s_min_extra_isize;	/* All inodes have at least # bytes */
+    uint16	s_want_extra_isize; 	/* New inodes should reserve # bytes */
+    uint32	s_flags;		/* Miscellaneous flags */
+    uint16   	s_raid_stride;		/* RAID stride */
+    uint16   	s_mmp_update_interval;  /* # seconds to wait in MMP checking */
+    uint64   	s_mmp_block;            /* Block for multi-mount protection */
+    uint32   	s_raid_stripe_width;    /* blocks on all data disks (N*stride)*/
+    uchar		s_log_groups_per_flex;	/* FLEX_BG group size */
+    uchar    	s_reserved_char_pad;
+    uint16	s_reserved_pad;		/* Padding to next 32bits */
+    uint64	s_kbytes_written;	/* nr of lifetime kilobytes written */
+    uint32	s_snapshot_inum;	/* Inode number of active snapshot */
+    uint32	s_snapshot_id;		/* sequential ID of active snapshot */
+    uint64	s_snapshot_r_blocks_count; /* reserved blocks for active
+                          snapshot's future use */
+    uint32	s_snapshot_list;	/* inode number of the head of the on-disk snapshot list */
+    uint32	s_error_count;		/* number of fs errors */
+    uint32	s_first_error_time;	/* first time an error happened */
+    uint32	s_first_error_ino;	/* inode involved in first error */
+    uint64	s_first_error_block;	/* block involved of first error */
+    uchar		s_first_error_func[32];	/* function where the error happened */
+    uint32	s_first_error_line;	/* line number where error happened */
+    uint32	s_last_error_time;	/* most recent time of an error */
+    uint32	s_last_error_ino;	/* inode involved in last error */
+    uint32	s_last_error_line;	/* line number where error happened */
+    uint64	s_last_error_block;	/* block involved of last error */
+    uchar		s_last_error_func[32];	/* function where the error happened */
+    uchar		s_mount_opts[64];
+    uint32	s_usr_quota_inum;	/* inode number of user quota file */
+    uint32	s_grp_quota_inum;	/* inode number of group quota file */
+    uint32	s_overhead_blocks;	/* overhead blocks/clusters in fs */
+    uint32   	s_reserved[108];        /* Padding to the end of the block */
+    uint32	s_checksum;		/* crc32c(superblock) */
+} ext2_super_block;
+
+typedef struct 
+{
+    uint32 bg_block_bitmap;	/* Id of the first block of the "block bitmap" */
+    uint32 bg_inode_bitmap;	/* Id of the first block of the "inode bitmap" */
+    uint32 bg_inode_table;	/* Id of the first block of the "inode table" */
+    uint16 bg_free_blocks_count;	/* Total number of free blocks */
+    uint16 bg_free_inodes_count;	/* Total number of free inodes */
+    uint16 bg_used_dirs_count;	/* Number of inodes allocated to directories */
+    uint16 bg_pad;		/* Padding the structure on a 32bit boundary */
+    uint32 bg_reserved[3];	/* Future implementation */
+} ext2_group_desc;
+
+typedef struct
+{
+    ext2_super_block superblock;
+    ext2_group_desc groups;
+} EXT_DRIVE;
+
+
+
+
+//################################################################
+// Unknown Drives
+//################################################################
+
+// For unknown drive - define a union of known headers
+//  and hope it is one of those
+typedef union 
+{
+    local int DriveNum = NumDrives++ ; // keep track of the index of this drive
+    struct MASTER_BOOT_RECORD mbr;
+    struct FAT16_BOOTSECTOR boot_fat16;
+    struct FAT32_BOOTSECTOR boot_fat32;
+    struct NTFS_BOOTSECTOR boot_ntfs;
+} DRIVE_NOT_SUPPORTED;
+
+//################################################################
+// Detect drive type
+//################################################################
+
+// Used to prevent drives from being defined twice - this could
+// happen if a drive is listed in the MBR and the EFI table
+int DriveAlreadyExists( int64 pos )
+{
+    local int i;
+    for( i = 0; i < NumDrives; i++ )
+    {
+        if( startof(drive[i]) == pos )
+            return true;
+    }
+    return false;
+}
+
+// Function to detect different types of drives
+int AutoDetectDrive( int SystemID )
+{
+    local int   i;
+    local int64 startPos;
+
+    // Detect drive by using the SystemID from the partition table
+    if( SystemID != -1 )
+    {
+        if( (SystemID==FAT_16_INF32MB) ||
+            (SystemID==FAT_16) ||
+            (SystemID==EXT_FAT16_INT13) )
+        {    
+            // Found FAT16 drive
+            FAT16_DRIVE drive;
+            return true;
+        }
+        else if( (SystemID==PRI_FAT32_INT13) ||
+                 (SystemID==EXT_FAT32_INT13) )
+        {
+            // Found FAT32 drive
+            FAT32_DRIVE drive;
+            return true;
+        }
+        else if( SystemID==SHAGOS_SWAP_MACOS_X_HFS )
+        {
+            // Found HFS drive
+            HFS_DRIVE drive;
+            return true;
+        }
+        else if( SystemID==NTFS_HPFS )
+        {
+            // Found NTFS drive
+            NTFS_DRIVE drive;
+            return true;
+        }
+        else if( (SystemID==EXTENDED) ||
+                 (SystemID==WIN95_EXT_PARTITION) ||
+                 (SystemID==DRDOS_SECURED_EXTENDED) )
+        {
+            // Extended partition
+            startPos = FTell();
+            EXTENDED_PARTITION extended <bgcolor=cLtPurple>;
+
+            // Find the extended drives
+            for( i = 0; i < 2; i++ )
+            {
+                if( extended.partitions[i].SystemID != EMPTY )
+                {
+                    FSeek( startPos + extended.partitions[i].RelativeSector*(INT64)512 );
+                    if( !DriveAlreadyExists(FTell()) )
+                    {
+                        if( !AutoDetectDrive( extended.partitions[i].SystemID ) )
+                            DRIVE_NOT_SUPPORTED drive;
+                    }
+                }
+            }
+            return true;
+        }
+        else if( SystemID==LEGACY_MBR_EFI_HEADER )
+        {
+            // EFI partition
+            startPos = FTell();
+            EFI_PARTITION efi <bgcolor=cLtPurple>;
+
+            // Find the drives
+            i = 0;
+            while( exists( efi.partitions[i] ) )
+            {
+                FSeek( efi.partitions[i].FirstLBA*512 );
+                if( !AutoDetectDrive( -1 ) )
+                    DRIVE_NOT_SUPPORTED drive;
+                i++;
+            }
+            return true;
+        }
+        else if( SystemID==LINUX_NATIVE_2 )
+        {
+            startPos = FTell();
+            if (ReadUShort(startPos + 0x438) == 0xEF53)
+            {
+                FSeek( startPos + 0x400 );
+                EXT_DRIVE drive;
+                return true;
+            }
+        }
+    }
+
+    // Detect by reading data from the header
+    startPos = FTell();
+    if( ReadString( startPos + 0x36, 8 ) == "FAT16   " )
+    {
+        // Found FAT16 drive
+        FAT16_DRIVE drive;
+        return true;
+    }
+    else if( ReadString( startPos + 0x52, 8 ) == "FAT32   " )
+    {
+        // Found FAT32 drive
+        FAT32_DRIVE drive;
+        return true;
+    }
+    else if( ReadString( startPos + 0x3, 8 ) == "NTFS    " )
+    {
+        // Found NTFS drive
+        NTFS_DRIVE drive;
+        return true;
+    }
+    else if( (ReadString( startPos + 1024, 2 ) == "H+") ||
+             (ReadString( startPos + 1024, 2 ) == "HX") )
+    {
+        // Found HFS drive
+        HFS_DRIVE drive;
+        return true;
+    }
+
+    return false; // not found
+}
+
+// Check for EndOfSectorMarker (present on MBR/FAT16/FAT32/NTFS)
+if( ReadUShort(510)!=0xAA55 && ReadUByte(1024) != 'H' )
+{
+    Warning( "File/Disk is not a valid MBR/FAT16/FAT32/NTFS/HFS. Template stopped." );
+    return -1;
+}
+
+// Check for different drive types
+if( AutoDetectDrive(-1) == false )
+{
+    // Auto detect the MBR
+    local unsigned short mbr_boot_ok=0;
+    local unsigned short i;
+    local uchar BootIndicator, SystemID;
+    for(i=0;i<4;i++)
+    {
+        // Check BootIndicator and SystemID
+        BootIndicator = ReadUByte( 0x1BE + i*10h );
+        SystemID      = ReadUByte( 0x1C2 + i*10h );
+        if( (BootIndicator==SYSTEM_PARTITION || BootIndicator==NOBOOT) && (SystemID!=EMPTY) )
+        {
+            if(mbr_boot_ok==0)
+            {
+                MASTER_BOOT_RECORD boot_mbr <bgcolor=cLtPurple>;
+                mbr_boot_ok=1;
+            }
+
+            // Jump to Partition
+            FSeek(boot_mbr.partitions[i].RelativeSector*(INT64)512);
+            if( !DriveAlreadyExists(FTell()) )
+            {
+                if( !AutoDetectDrive( SystemID ) )
+                    DRIVE_NOT_SUPPORTED drive;
+            }
+        }
+    }
+
+    // Could not find MBR - drive is not supported
+    if( !mbr_boot_ok )
+        DRIVE_NOT_SUPPORTED drive;
+}
+
