@@ -3,12 +3,25 @@
 import idc
 import idaapi
 import re
-
+import add_block_for_macho as addblk
 
 def add_block_type():
     # it's trouble to add c-style-structure directly into structure table, so we put them into local types instead
     # ----------------------Block_descriptor--------------------------#
     # flag with BLOCK_HAS_COPY_DISPOSE | BLOCK_HAS_SIGNATURE
+    enu_Block_Flag = """
+        typedef enum _Block_Flag : uint32_t {
+            BLOCK_NEEDS_FREE = (1 << 24),
+            BLOCK_HAS_COPY_DISPOSE = (1 << 25),
+            BLOCK_HAS_CTOR = (1 << 26),
+            BLOCK_IS_GC = (1 << 27),
+            BLOCK_IS_GLOBAL = (1 << 28),
+            BLOCK_USE_STRET = (1 << 29),
+            BLOCK_HAS_SIGNATURE = (1 << 30),
+            BLOCK_HAS_EXTENDED_LAYOUT = (1 << 31),
+        } Block_Flag;
+    """
+
     strudef_Block_descriptor_hcd_hs = "                 \
          typedef struct _Block_descriptor_hcd_hs         \
          {                                               \
@@ -63,7 +76,7 @@ def add_block_type():
          typedef struct _Block_layout                    \
          {                                               \
              void *isa;                                  \
-             volatile int32_t flags;                     \
+             uint32_t flags;                     \
              int32_t reserved;                           \
              void (*invoke)(void *, ...);                \
              struct Block_descriptor *descriptor;        \
@@ -71,30 +84,33 @@ def add_block_type():
      "
 
     # now add two types above
-    SetLocalType(-1, "typedef unsigned long uintptr_t;typedef int int32_t;", 0)
-    SetLocalType(-1, strudef_Block_descriptor_hcd_hs, 0)
-    SetLocalType(-1, strudef_Block_descriptor_hcd, 0)
-    SetLocalType(-1, strudef_Block_descriptor_hs, 0)
-    SetLocalType(-1, strudef_Block_descriptor_o, 0)
-    SetLocalType(-1, strudef_Block_descriptor, 0)
-    SetLocalType(-1, strudef_Block_layout, 0)
+    idc.SetLocalType(-1, "typedef unsigned long uintptr_t;typedef int int32_t;", 0)
+
+    idc.SetLocalType(-1, enu_Block_Flag, 0);
+    idc.SetType(0, "_Block_Flag");
+
+    idc.SetLocalType(-1, strudef_Block_descriptor_hcd_hs, 0)
+    idc.SetLocalType(-1, strudef_Block_descriptor_hcd, 0)
+    idc.SetLocalType(-1, strudef_Block_descriptor_hs, 0)
+    idc.SetLocalType(-1, strudef_Block_descriptor_o, 0)
+    idc.SetLocalType(-1, strudef_Block_descriptor, 0)
+    idc.SetLocalType(-1, strudef_Block_layout, 0)
 
     # then add from local type to structures
-    SetType(0, "_Block_descriptor_hcd_hs")  # address set to 0 just for import from localtypes into structures
-    SetType(0, "_Block_descriptor_hcd")
-    SetType(0, "_Block_descriptor_hs")
-    SetType(0, "_Block_descriptor_o")
-    SetType(0, "_Block_descriptor")
-    SetType(0, "_Block_layout")
+    idc.SetType(0, "_Block_descriptor_hcd_hs")  # address set to 0 just for import from localtypes into structures
+    idc.SetType(0, "_Block_descriptor_hcd")
+    idc.SetType(0, "_Block_descriptor_hs")
+    idc.SetType(0, "_Block_descriptor_o")
+    idc.SetType(0, "_Block_descriptor")
+    idc.SetType(0, "_Block_layout")
 
     global offset_flags, offset_invoke, offset_descri
-    tmpid = GetStrucIdByName("_Block_layout")
-    offset_flags = GetMemberOffset(tmpid, "flags")
-    offset_invoke = GetMemberOffset(tmpid, "invoke")
-    offset_descri = GetMemberOffset(tmpid, "descriptor")
+    tmpid = idc.GetStrucIdByName("_Block_layout")
+    offset_flags = idc.GetMemberOffset(tmpid, "flags")
+    offset_invoke = idc.GetMemberOffset(tmpid, "invoke")
+    offset_descri = idc.GetMemberOffset(tmpid, "descriptor")
     if tmpid == -1 or offset_flags == -1 or offset_invoke == -1 or offset_descri == -1:
         raise ValueError, "struct define error!"
-
 
 def imp_cb(ea, name, ord):
     global globalblock_addr, stackblock_addr
@@ -102,15 +118,20 @@ def imp_cb(ea, name, ord):
         globalblock_addr = ea
     elif name.find("NSConcreteStackBlock") != -1:
         stackblock_addr = ea
+        # sometimes __NSConcreteStackBlock_ptr is referenced, and not __NSConcreteStackBlock itself
+        f = idc.DfirstB(stackblock_addr)
+        if idc.SegName(f) == '__got':
+            stackblock_addr = f
+
     return True
 
 
 def find_xref(addr, xrefs, restriarea):
-    ref = DfirstB(addr)
+    ref = idc.DfirstB(addr)
     while ref != BADADDR:
-        if SegName(ref) in restriarea:
+        if idc.SegName(ref) in restriarea:
             xrefs.append(ref)
-        ref = DnextB(addr, ref)
+        ref = idc.DnextB(addr, ref)
 
 
 def get_block_call():
@@ -168,7 +189,7 @@ def get_proto_for_sign(sign):
                 # detect if class defined
                 objtype = match.group(1)
                 print "init type:", objtype
-                SetType(0, objtype)
+                idc.SetType(0, objtype)
                 if BADADDR == GetStrucIdByName(objtype):
                     # we define a temporary type
                     SetLocalType(-1, "typedef struct " + objtype + " {void* isa;} _" + objtype + ";", 0)
@@ -193,88 +214,73 @@ def get_proto_for_sign(sign):
 
 def extract_description(addr, flag, funcaddr, descriaddr):
     prototype = "void func(void);"
-    offset_copy = -1
-    offset_dispose = -1
-    offset_sign = -1
-    offset_layout = -1
-    if (flag & BLOCK_HAS_COPY_DISPOSE) != 0 and (flag & BLOCK_HAS_SIGNATURE) != 0:
-        MakeName(descriaddr, "block_descriptor_%x" % addr)
-        SetType(descriaddr, "_Block_descriptor_hcd_hs")
-        tmpid = GetStrucIdByName("_Block_descriptor_hcd_hs")
-        offset_copy = GetMemberOffset(tmpid, "copy")
-        offset_dispose = GetMemberOffset(tmpid, "dispose")
-        offset_sign = GetMemberOffset(tmpid, "signature")
-        offset_layout = GetMemberOffset(tmpid, "layout")
+
+    blktyp = "_Block_descriptor"
+
+    if (flag & BLOCK_HAS_COPY_DISPOSE):
+        blktyp = blktyp + "_hcd"
+
+    if (flag & BLOCK_HAS_SIGNATURE):
+        blktyp = blktyp + "_hs"
+
+    if blktyp == "_Block_descriptor":
+        blktyp = "_Block_descriptor_o"
+
+    tmpid = idc.GetStrucIdByName(blktyp)
+
+    idc.MakeNameEx(descriaddr, "block_descriptor_%x" % addr, idc.SN_NOWARN)
+    idc.SetType(descriaddr, blktyp)
+
+    # print "extract_description(addr=%x, flag=%x, funcaddr=%x, descriaddr=%x)" % (addr, flag, funcaddr, descriaddr)
+    # print "blktyp: %s" % blktyp
+
+    if (flag & BLOCK_HAS_COPY_DISPOSE):
+        offset_copy = idc.GetMemberOffset(tmpid, "copy")
+        offset_dispose = idc.GetMemberOffset(tmpid, "dispose")
+
         if is64bit:
-            copyaddr = Qword(descriaddr + offset_copy) & 0xFFFFFFFFFFFFFFFE  # fixup thumb/arm
-            disposeaddr = Qword(descriaddr + offset_dispose) & 0xFFFFFFFFFFFFFFFE
-            signptr = Qword(descriaddr + offset_sign)
-            layoutptr = Qword(descriaddr + offset_layout)
+            copyaddr = idc.Qword(descriaddr + offset_copy)
+            disposeaddr = idc.Qword(descriaddr + offset_dispose)
         else:
-            copyaddr = Dword(descriaddr + offset_copy) & 0xFFFFFFFE
-            disposeaddr = Dword(descriaddr + offset_dispose) & 0xFFFFFFFE
-            signptr = Dword(descriaddr + offset_sign)
-            layoutptr = Dword(descriaddr + offset_layout)
-        if signptr != 0:
-            prototype = get_proto_for_sign(GetString(signptr))
-        if layoutptr != 0:
-            pass
+            copyaddr = idc.Dword(descriaddr + offset_copy)
+            disposeaddr = idc.Dword(descriaddr + offset_dispose)
+        
+        if isarm: # and not is64bit?
+            # fixup thumb/arm
+            copyaddr &= 0xFFFFFFFFFFFFFFFE
+            disposeaddr &= 0xFFFFFFFFFFFFFFFE
+
         if copyaddr != 0:
-            MakeName(copyaddr, "block_copy_%x" % addr)
-            SetType(copyaddr, "void copy(void *dst, const void *src);")
+            idc.MakeName(copyaddr, "block_copy_%x" % addr)
+            idc.SetType(copyaddr, "void copy(void *dst, const void *src);")
+
         if disposeaddr != 0:
-            MakeName(disposeaddr, "block_dispose_%x" % addr)
-            SetType(disposeaddr, "void dispose(const void *);")
-        if funcaddr > 0:
-            MakeName(funcaddr, "block_invoke_%x" % addr)
-            SetType(funcaddr, prototype)
-    elif (flag & BLOCK_HAS_COPY_DISPOSE) != 0:
-        MakeName(descriaddr, "block_descriptor_%x" % addr)
-        SetType(descriaddr, "_Block_descriptor_hcd")
-        tmpid = GetStrucIdByName("_Block_descriptor_hcd")
-        offset_copy = GetMemberOffset(tmpid, "copy")
-        offset_dispose = GetMemberOffset(tmpid, "dispose")
+            idc.MakeName(disposeaddr, "block_dispose_%x" % addr)
+            idc.SetType(disposeaddr, "void dispose(const void *);")
+        
+    
+    if (flag & BLOCK_HAS_SIGNATURE):
+        offset_sign = idc.GetMemberOffset(tmpid, "signature")
+        offset_layout = idc.GetMemberOffset(tmpid, "layout")
+
         if is64bit:
-            copyaddr = Qword(descriaddr + offset_copy) & 0xFFFFFFFFFFFFFFFE  # fixup thumb/arm
-            disposeaddr = Qword(descriaddr + offset_dispose) & 0xFFFFFFFFFFFFFFFE
+            signptr = idc.Qword(descriaddr + offset_sign)
+            layoutptr = idc.Qword(descriaddr + offset_layout)
         else:
-            copyaddr = Dword(descriaddr + offset_copy) & 0xFFFFFFFE
-            disposeaddr = Dword(descriaddr + offset_dispose) & 0xFFFFFFFE
-        # print "addr=%x copy=%x dispose=%x" % (addr, copyaddr, disposeaddr)
-        if copyaddr != 0:
-            MakeName(copyaddr, "block_copy_%x" % addr)
-            SetType(copyaddr, "void copy(void *dst, const void *src);")
-        if disposeaddr != 0:
-            MakeName(disposeaddr, "block_dispose_%x" % addr)
-            SetType(disposeaddr, "void dispose(const void *);")
-        if funcaddr > 0:
-            MakeName(funcaddr, "block_invoke_%x" % addr)
-            SetType(funcaddr, prototype)
-    elif (flag & BLOCK_HAS_SIGNATURE) != 0:
-        MakeName(descriaddr, "block_descriptor_%x" % addr)
-        SetType(descriaddr, "_Block_descriptor_hs")
-        tmpid = GetStrucIdByName("_Block_descriptor_hs")
-        offset_sign = GetMemberOffset(tmpid, "signature")
-        offset_layout = GetMemberOffset(tmpid, "layout")
-        if is64bit:
-            signptr = Qword(descriaddr + offset_sign)
-            layoutptr = Qword(descriaddr + offset_layout)
-        else:
-            signptr = Dword(descriaddr + offset_sign)
-            layoutptr = Dword(descriaddr + offset_layout)
+            signptr = idc.Dword(descriaddr + offset_sign)
+            layoutptr = idc.Dword(descriaddr + offset_layout)
         if signptr != 0:
-            prototype = get_proto_for_sign(GetString(signptr))
+            # print "sign at 0x%x" % signptr
+            prototype = get_proto_for_sign(idc.GetString(signptr))
         if layoutptr != 0:
+            print "Unhandled layoutptr %x" % layoutptr
             pass
-        # print "addr=%x signptr=%s layoutptr=%x" % (addr, prototype, layoutptr)
-        if funcaddr > 0:
-            MakeName(funcaddr, "block_invoke_%x" % addr)
-            SetType(funcaddr, prototype)
-    else:
-        MakeName(descriaddr, "block_descriptor_%x" % addr)
-        SetType(descriaddr, "_Block_descriptor_o")
-        tmpid = GetStrucIdByName("_Block_descriptor_o")
-        # print "addr=%x" % addr
+
+
+    # # if funcaddr > 0:
+    #     idc.MakeName(funcaddr, "block_invoke_%x" % addr)
+    #     idc.SetType(funcaddr, prototype)
+
     return prototype
 
 
@@ -282,109 +288,128 @@ def extract_globalblock(addr):
     # this kind of block targetted to absolute address
     print "------%x------" % addr
     global offset_invoke, offset_flags, offset_descri
-    MakeName(addr, "global_block_%x" % addr)
-    SetType(addr, "_Block_layout")
-    flag = Dword(addr + offset_flags)
+    idc.MakeName(addr, "global_block_%x" % addr)
+    idc.SetType(addr, "_Block_layout")
+    flag = idc.Dword(addr + offset_flags)
     if is64bit:
-        funcaddr = Qword(addr + offset_invoke) & 0xFFFFFFFFFFFFFFFE  # skip thumb or arm
-        descriaddr = Qword(addr + offset_descri)
+        funcaddr = idc.Qword(addr + offset_invoke)
+        descriaddr = idc.Qword(addr + offset_descri)
     else:
-        funcaddr = Dword(addr + offset_invoke) & 0xFFFFFFFE
-        descriaddr = Dword(addr + offset_descri)
-    prototype = "void func(void);"
-    if descriaddr != 0:
-        prototype = extract_description(addr, flag, funcaddr, descriaddr)
+        funcaddr = idc.Dword(addr + offset_invoke)
+        descriaddr = idc.Dword(addr + offset_descri)
+    if isarm:
+        funcaddr &= 0xFFFFFFFFFFFFFFFE
+
+    prototype = extract_description(addr, flag, funcaddr, descriaddr) 
+
     if funcaddr != 0:
-        MakeName(funcaddr, "global_block_invoke_%x" % addr)
-        SetType(funcaddr, prototype)
+        idc.MakeName(funcaddr, "global_block_invoke_%x" % addr)
+        idc.SetType(funcaddr, prototype)
 
 
-def extract_stackblock(addr):
+def extract_stackblock(addr, bptreg=None):
     # this kind of block targetted to stack address space
     print "------%x------" % addr
     # find the stack frame for this function
     # which register store the base of current block structure
-    disasm = GetDisasm(addr)
-    bptreg = GetOpnd(addr, 0)
+    disasm = idc.GetDisasm(addr)
+    if bptreg is None:
+        bptreg = idc.GetOpnd(addr, 0)
     # find base stored position of current block in stack
+    # on arm it'd be "STR R1, [SP,#0x48+var_30]"
+    # on x86 it'd be "lea rbx, [rbp+var_30]; mov rbx, rX"
+    # so we need prev instruction on x86
+
     begin = addr
-    for count in range(0, 20):
-        begin = begin + idaapi.decode_insn(begin)
-        if GetOpnd(begin, 0) == bptreg or GetOpnd(begin, 1) == bptreg:
+    for count in xrange(0, 20):
+        nexti = begin + idaapi.decode_insn(begin)
+        if idc.GetOpnd(nexti, 0) == bptreg or idc.GetOpnd(nexti, 1) == bptreg:
+            if isarm:
+                begin = nexti
             break
-    # match  "STR R1, [SP,#0x48+var_30]"
-    match = re.search(r'var_[0-9A-Fa-f]+', GetDisasm(begin))
+        begin = nexti
+
+    match = re.search(r'(var_|block_)[0-9A-Fa-f]+', idc.GetDisasm(begin))
     if match == None:  # too complex to handle
-        print "unhandled %x" % addr
-        return
+        return "unhandled %x -- cant detect varname" % addr
+
     varname = match.group(0)
-    frameid = GetFrame(addr)
-    varoff = GetMemberOffset(frameid, varname)
+    frameid = idc.GetFrame(addr)
+    varoff = idc.GetMemberOffset(frameid, varname)
     if varoff == -1:
-        print "unhandled %x" % addr
-        return
+        return "unhandled %x -- cant find varoff in frame" % addr
     # first delete those members which occupy block space
     new_name = "block_%x" % addr
-    id_Block_layout = GetStrucIdByName("_Block_layout")
-    size_Block_layout = GetStrucSize(id_Block_layout)
+    id_Block_layout = idc.GetStrucIdByName("_Block_layout")
+    size_Block_layout = idc.GetStrucSize(id_Block_layout)
     beginoff = varoff
     endoff = varoff + size_Block_layout
     for iaddr in range(beginoff, endoff):
-        DelStrucMember(frameid, iaddr)
-    if 0 != AddStrucMember(frameid, new_name, varoff, FF_STRU | FF_DATA, id_Block_layout, size_Block_layout):
-        print "unhandled %x" % addr
-        return
-        # get structure member data from decompiled source
+        idc.DelStrucMember(frameid, iaddr)
+    if 0 != idc.AddStrucMember(frameid, new_name, varoff, idc.FF_STRU | idc.FF_DATA, id_Block_layout, size_Block_layout):
+        return "unhandled %x -- cant add struc member" % addr
+    
+    # get structure member data from decompiled source
     funcaddr = 0
     descriaddr = 0
     flag = 0
-    lines = idaapi.decompile(addr).__str__().split('\n')
+    lines = str(idaapi.decompile(addr)).split('\n')
+
+    NSConcreteStackBlock_occur_cnt = 0
+
     for line in lines:
         line = line.lower()
+        if '= &_NSConcreteStackBlock'.lower() in line:
+            NSConcreteStackBlock_occur_cnt += 1
+
         if line.find(new_name) != -1:
             if line.find(".flags") != -1:
                 if flag == 0:
                     match = re.search(r'flags = (.*);', line)
                     try:
-                        flag = int(match.group(1)) & 0xffffffff  # format as -1073741824
+                        flag_str = match.group(1).strip()
+                        # print "flag_str: %s" % flag_str
+                        flag = int(flag_str, 16 if flag_str[:2] == '0x' else 10) & 0xffffffff  # format as -1073741824
                     except:
                         flag = 0
             elif line.find(".invoke") != -1:
                 if funcaddr == 0:
-                    match = re.search(r'invoke = .*_([0-9a-f]+);', line)
+                    match = re.search(r'invoke = (\(.*\))?([0-9a-zA-Z_]+);', line)
                     try:
-                        funcaddr = int(match.group(1), 16) & 0xfffffffffffffffe  # fix thumb/arm
+                        funcaddr = idc.LocByName(match.group(2))
+                        if isarm:
+                            funcaddr &= 0xfffffffffffffffe
                     except:
                         funcaddr = 0
             elif line.find(".descriptor") != -1:
                 if descriaddr == 0:
-                    match = re.search(r'descriptor = .*_([0-9a-f]+);', line)
+                    match = re.search(r'descriptor = (\(.*\))?&?([0-9a-zA-Z_]+);', line)
                     try:
-                        descriaddr = int(match.group(1), 16)
+                        descriaddr = idc.LocByName(match.group(2))
                     except:
                         descriaddr = 0
-    if flag == 0 or descriaddr == 0:
-        print "unhandled %x" % addr
-        return
-    prototype = "void func(void);"
-    if descriaddr != 0:
-        prototype = extract_description(addr, flag, funcaddr, descriaddr)
-    if funcaddr != 0:
-        MakeName(funcaddr, "stack_block_invoke_%x" % addr)
-        SetType(funcaddr, prototype)
 
+    if flag == 0 or descriaddr == 0:
+        ret = "unhandled %x -- flag %x descriaddr %x" % (addr, flag, descriaddr)
+        if NSConcreteStackBlock_occur_cnt > 1:
+            ret = ret + "\nfound %x stack blocks near %x but only first one was processed" % (NSConcreteStackBlock_occur_cnt, addr)
+        return ret
+
+
+    prototype = extract_description(addr, flag, funcaddr, descriaddr)
+
+    if funcaddr != 0:
+        idc.MakeName(funcaddr, "stack_block_invoke_%x" % addr)
+        idc.SetType(funcaddr, prototype)
+
+    if NSConcreteStackBlock_occur_cnt > 1:
+        return "found %x stack blocks near %x but only first one was processed" % (NSConcreteStackBlock_occur_cnt, addr)
+
+    return None
 
 # constants
-BLOCK_DEALLOCATING = 0x0001
-BLOCK_REFCOUNT_MASK = 0xfffe
-BLOCK_NEEDS_FREE = 1 << 24
 BLOCK_HAS_COPY_DISPOSE = 1 << 25
-BLOCK_HAS_CTOR = 1 << 26
-BLOCK_IS_GC = 1 << 27
-BLOCK_IS_GLOBAL = 1 << 28
-BLOCK_USE_STRET = 1 << 29  # undefined if !BLOCK_HAS_SIGNATURE
 BLOCK_HAS_SIGNATURE = 1 << 30
-BLOCK_HAS_EXTENDED_LAYOUT = 1 << 31
 
 # variables
 globalblock_addr = 0
@@ -392,14 +417,19 @@ stackblock_addr = 0
 globalblock_set = []
 stackblock_set = []
 is64bit = False
+isarm   = True
 offset_flags = -1
 offset_invoke = -1
 offset_descri = -1
 
 if __name__ == "__main__":
     print "--------------init--------------"
-    if (GetCharPrm(INF_LFLAGS) & LFLG_64BIT) != 0:
+
+    if (idc.GetCharPrm(INF_LFLAGS) & LFLG_64BIT) != 0:
         is64bit = True
+
+    isarm = 'ax' not in idaapi.ph_get_regnames()
+
     add_block_type()
     get_block_call()
 
@@ -407,6 +437,16 @@ if __name__ == "__main__":
     for i in globalblock_set:
         extract_globalblock(i)
 
+    all_errs = []
+
     print "--------------extract_stackblock--------------"
     for i in stackblock_set:
-        extract_stackblock(i)
+        ret = extract_stackblock(i)
+        if ret is not None:
+            all_errs.append((i, ret))
+            print ret
+            idc.Warning(ret)
+
+    print "Done! %d errors: " % len(all_errs)
+    for addr, err in all_errs:
+        print "%x: %s" % (addr, err)
