@@ -76,7 +76,7 @@ def add_block_type():
          typedef struct _Block_layout                    \
          {                                               \
              void *isa;                                  \
-             uint32_t flags;                     \
+             int32_t flags;                              \
              int32_t reserved;                           \
              void (*invoke)(void *, ...);                \
              struct Block_descriptor *descriptor;        \
@@ -87,8 +87,6 @@ def add_block_type():
     idc.SetLocalType(-1, "typedef unsigned long uintptr_t;typedef int int32_t;", 0)
 
     idc.SetLocalType(-1, enu_Block_Flag, 0);
-    idc.SetType(0, "_Block_Flag");
-
     idc.SetLocalType(-1, strudef_Block_descriptor_hcd_hs, 0)
     idc.SetLocalType(-1, strudef_Block_descriptor_hcd, 0)
     idc.SetLocalType(-1, strudef_Block_descriptor_hs, 0)
@@ -97,6 +95,7 @@ def add_block_type():
     idc.SetLocalType(-1, strudef_Block_layout, 0)
 
     # then add from local type to structures
+    idc.SetType(0, "_Block_Flag");
     idc.SetType(0, "_Block_descriptor_hcd_hs")  # address set to 0 just for import from localtypes into structures
     idc.SetType(0, "_Block_descriptor_hcd")
     idc.SetType(0, "_Block_descriptor_hs")
@@ -109,8 +108,9 @@ def add_block_type():
     offset_flags = idc.GetMemberOffset(tmpid, "flags")
     offset_invoke = idc.GetMemberOffset(tmpid, "invoke")
     offset_descri = idc.GetMemberOffset(tmpid, "descriptor")
+
     if tmpid == -1 or offset_flags == -1 or offset_invoke == -1 or offset_descri == -1:
-        raise ValueError, "struct define error!"
+        raise ValueError, "struct define error tmpid=%x oflags=%x oinvoke=%x odecri=%x!" % (tmpid, offset_flags, offset_invoke, offset_descri)
 
 def imp_cb(ea, name, ord):
     global globalblock_addr, stackblock_addr
@@ -312,26 +312,38 @@ def extract_stackblock(addr, bptreg=None):
     print "------%x------" % addr
     # find the stack frame for this function
     # which register store the base of current block structure
-    disasm = idc.GetDisasm(addr)
+    
     if bptreg is None:
         bptreg = idc.GetOpnd(addr, 0)
+
+    print "bptreg is %s" % bptreg
+
     # find base stored position of current block in stack
     # on arm it'd be "STR R1, [SP,#0x48+var_30]"
     # on x86 it'd be "lea rbx, [rbp+var_30]; mov rbx, rX"
+    # OR mov [rbp+var_58], rX !
     # so we need prev instruction on x86
 
     begin = addr
+    count = 0
+
     for count in xrange(0, 20):
-        nexti = begin + idaapi.decode_insn(begin)
-        if idc.GetOpnd(nexti, 0) == bptreg or idc.GetOpnd(nexti, 1) == bptreg:
-            if isarm:
-                begin = nexti
+        begin += idaapi.decode_insn(begin)
+        if idc.GetOpnd(begin, 0) == bptreg or idc.GetOpnd(begin, 1) == bptreg:
+            print "Found bptreg reference at %x: %s" % (begin, idc.GetDisasm(begin))
             break
-        begin = nexti
+
+    if count == 20 - 1:
+        return "Failed to find bptreg reference"
 
     match = re.search(r'(var_|block_)[0-9A-Fa-f]+', idc.GetDisasm(begin))
-    if match == None:  # too complex to handle
-        return "unhandled %x -- cant detect varname" % addr
+    if match is None:
+        print "Cant detect varname in %s, trying just next instruction" % idc.GetDisasm(begin)
+        begin += idaapi.decode_insn(begin)
+        match = re.search(r'(var_|block_)[0-9A-Fa-f]+', idc.GetDisasm(begin))
+
+    if match is None:
+        return "unhandled %x -- cant detect varname at %x" % (addr, begin)
 
     varname = match.group(0)
     frameid = idc.GetFrame(addr)
@@ -359,7 +371,7 @@ def extract_stackblock(addr, bptreg=None):
 
     for line in lines:
         line = line.lower()
-        if '= &_NSConcreteStackBlock'.lower() in line:
+        if '_NSConcreteStackBlock'.lower() in line:
             NSConcreteStackBlock_occur_cnt += 1
 
         if line.find(new_name) != -1:
@@ -417,7 +429,7 @@ stackblock_addr = 0
 globalblock_set = []
 stackblock_set = []
 is64bit = False
-isarm   = True
+isarm   = False
 offset_flags = -1
 offset_invoke = -1
 offset_descri = -1
