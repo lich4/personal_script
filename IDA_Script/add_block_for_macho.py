@@ -316,7 +316,7 @@ def extract_stackblock(addr, bptreg=None):
     if bptreg is None:
         bptreg = idc.GetOpnd(addr, 0)
 
-    print "bptreg is %s" % bptreg
+    # print "bptreg is %s" % bptreg
 
     # find base stored position of current block in stack
     # on arm it'd be "STR R1, [SP,#0x48+var_30]"
@@ -330,7 +330,7 @@ def extract_stackblock(addr, bptreg=None):
     for count in xrange(0, 20):
         begin += idaapi.decode_insn(begin)
         if idc.GetOpnd(begin, 0) == bptreg or idc.GetOpnd(begin, 1) == bptreg:
-            print "Found bptreg reference at %x: %s" % (begin, idc.GetDisasm(begin))
+            # print "Found bptreg reference at %x: %s" % (begin, idc.GetDisasm(begin))
             break
 
     if count == 20 - 1:
@@ -348,6 +348,7 @@ def extract_stackblock(addr, bptreg=None):
     varname = match.group(0)
     frameid = idc.GetFrame(addr)
     varoff = idc.GetMemberOffset(frameid, varname)
+    
     if varoff == -1:
         return "unhandled %x -- cant find varoff in frame" % addr
     # first delete those members which occupy block space
