@@ -37,6 +37,38 @@ function _utf8_encode(string) {
     return utftext;
 }
 
+// 获取keychain数据
+function getkeychain() {
+    var NSMutableDictionary=ObjC.classes.NSMutableDictionary;
+    var kCFBooleanTrue = ObjC.Object(getExportFunction("d", "kCFBooleanTrue"));
+    var kSecReturnAttributes = ObjC.Object(getExportFunction("d", "kSecReturnAttributes"));
+    var kSecMatchLimitAll = ObjC.Object(getExportFunction("d", "kSecMatchLimitAll"));
+    var kSecMatchLimit = ObjC.Object(getExportFunction("d", "kSecMatchLimit"));
+    var kSecClassGenericPassword = ObjC.Object(getExportFunction("d", "kSecClassGenericPassword"));
+    var kSecClassInternetPassword = ObjC.Object(getExportFunction("d", "kSecClassInternetPassword"));
+    var kSecClassCertificate = ObjC.Object(getExportFunction("d", "kSecClassCertificate"));
+    var kSecClassKey = ObjC.Object(getExportFunction("d", "kSecClassKey"));
+    var kSecClassIdentity = ObjC.Object(getExportFunction("d", "kSecClassIdentity"));
+    var kSecClass = ObjC.Object(getExportFunction("d","kSecClass"));
+
+    var query = NSMutableDictionary.alloc().init();
+    var SecItemCopyMatching = getExportFunction("f", "SecItemCopyMatching", "int", ["pointer", "pointer"]);
+    [kSecClassGenericPassword, kSecClassInternetPassword, kSecClassCertificate, kSecClassKey, 
+        kSecClassIdentity].forEach(function(secItemClass) {
+            query.setObject_forKey_(kCFBooleanTrue, kSecReturnAttributes);
+            query.setObject_forKey_(kSecMatchLimitAll, kSecMatchLimit);
+            query.setObject_forKey_(secItemClass, kSecClass);
+            var result = Memory.alloc(8);
+            Memory.writePointer(result, ptr("0"));
+            SecItemCopyMatching(query.handle, result);
+            var pt = Memory.readPointer(result);
+            if (!pt.isNull()) {
+                console.log(ObjC.Object(pt).toString());
+            }
+        }
+    )
+}
+
 /* Base64 Encode */
 function base64(input) {
     var _keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
