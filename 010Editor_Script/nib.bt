@@ -1,0 +1,159 @@
+//------------------------------------------------
+//--- 010 Editor v7.0 Binary Template
+//
+//      File: nib.bt
+//   Authors: lichao.890427@163.com
+//   Version: 1.0
+//   Purpose: Parse apple .nib file
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+typedef struct {
+    local uint16 val;
+    ubyte v1;
+    if ((v1 & 0x80) == 0) {
+        ubyte v2;
+        val = (v1 & 0x7F) + (v2 & 0x7F);
+    }
+    else {
+        val = v1 & 0x7F;
+    }
+} Variant<read=printVariant, optimize=false>;
+
+string printVariant(Variant& v) {
+    string s;
+	SPrintf(s,"%d", v.val);
+	return s;
+}
+
+typedef struct {
+    Variant clsindx;
+    Variant valindx;
+    Variant valcount;
+} Object;
+
+typedef struct {
+    Variant namelen;
+    char name[namelen.val];
+} Key<read=printKey, optimize=false>;
+
+string printKey(Key& k) {
+    string s;
+    SPrintf(s, "%s", k.name);
+    return s;
+}
+
+typedef struct {
+    Variant indx;
+    ubyte type;
+    if (type == 0)
+        byte data;
+    else if (type == 1)
+        short data;
+    else if (type == 2)
+        int32 data;
+    else if (type == 3)
+        int64 data;
+    else if (type == 6)
+        float data;
+    else if (type == 7)
+        double data;
+    else if (type == 8) {
+        Variant datalen;
+        char data[datalen.val];
+    }
+    else if (type == 10)
+        uint32 data;
+} Value<read=printValue, optimize=false>;
+
+string printValue(Value& v) {
+    string s;
+    if (v.type == 0)
+        SPrintf(s, "indx=%d,type=%d,val=%d", v.indx.val, v.type, v.data);
+    else if (v.type == 1)
+        SPrintf(s, "indx=%d,type=%d,val=%d", v.indx.val, v.type, v.data);
+    else if (v.type == 2)
+        SPrintf(s, "indx=%d,type=%d,val=%d", v.indx.val, v.type, v.data);
+    else if (v.type == 3)
+        SPrintf(s, "indx=%d,type=%d,val=%d", v.indx.val, v.type, v.data);
+    else if (v.type == 4)
+        SPrintf(s, "indx=%d,type=%d,val=true", v.indx.val, v.type);
+    else if (v.type == 5)
+        SPrintf(s, "indx=%d,type=%d,val=false", v.indx.val, v.type);
+    else if (v.type == 6)
+        SPrintf(s, "indx=%d,type=%d,val=%f", v.indx.val, v.type, v.data);
+    else if (v.type == 7)
+        SPrintf(s, "indx=%d,type=%d,val=%lf", v.indx.val, v.type, v.data);
+    else if (v.type == 8)
+        SPrintf(s, "indx=%d,type=%d,val=%s", v.indx.val, v.type, v.data);
+    else if (v.type == 9)
+        SPrintf(s, "indx=%d,type=%d,val=nil", v.indx.val, v.type);
+    else if (v.type == 10)
+        SPrintf(s, "indx=%d,type=%d,val=indx-%d", v.indx.val, v.type, v.data);
+    else
+        SPrintf(s, "type error");
+    return s;
+}
+
+typedef struct {
+    Variant namelen;
+    Variant extranum;
+    if (extranum.val > 0)
+        uint32 extra[extranum.val];
+    char name[namelen.val];
+} ClassName<read=printClassName, optimize=false>;
+
+string printClassName(ClassName& cn) {
+    string s;
+    SPrintf(s, "%s", cn.name);
+    return s;
+}
+
+typedef struct (uint32 count) {
+    Object objects[count];
+} Objects;
+
+typedef struct (uint32 count) {
+    Key keys[count];
+} Keys;
+
+typedef struct (uint32 count) {
+    Value values[count];
+} Values;
+
+typedef struct (uint32 count) {
+    ClassName clsnames[count];
+} ClassNames;
+
+FSeek(0);
+char signature[10];
+uint32 version_big;
+uint32 version_small;
+uint32 object_count;
+uint32 object_offset;
+uint32 key_count;
+uint32 key_offset;
+uint32 value_count;
+uint32 value_offset;
+uint32 classname_count;
+uint32 classname_offset;
+
+if (object_count > 0) {
+    FSeek(object_offset);
+    Objects objects(object_count);
+}
+if (key_count > 0) {
+    FSeek(key_offset);
+    Keys keys(key_count);
+}
+if (value_count > 0) {
+    FSeek(value_offset);
+    Values values(value_count);
+}
+if (classname_count > 0) {
+    FSeek(classname_offset);
+    ClassNames classnames(classname_count);
+}

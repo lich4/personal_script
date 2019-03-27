@@ -45,3 +45,7 @@
 		  This script is for iOS cache file format, for example:dyld_shared_cache_armv7s.
 ![image](https://github.com/lichao890427/personal_script/blob/master/010Editor_Script/screenshots/ios_cache.png)
 
+## nib.bt
+		  该脚本用于识别iOS nib文件，该文件存储界面结构
+		  This script is for iOS nib file format
+![image](https://github.com/lichao890427/personal_script/blob/master/010Editor_Script/screenshots/nib.png)
