@@ -147,6 +147,18 @@ function getclassmethod(cls) {
     }
 }
 
+/* Get Objective-C Property of object */
+function getclassproperty(cls) {
+    var pcount = Memory.alloc(4);
+    Memory.writeU32(pcount, 0);
+    var class_copyPropertyList = new NativeFunction(Module.findExportByName(null, "class_copyPropertyList"), "pointer", ["pointer", "pointer"]);
+    class_copyPropertyList(cls.class().handle, pcount);
+    var count = Memory.readU32(pcount);
+    for (var i = 0; i < count; i++) {
+
+    }
+}
+
 // 强制过证书校验
 function forcetrustcert() {
 	Interceptor.replace(Module.findExportByName(null, 'SecTrustEvaluate'),
@@ -222,4 +234,55 @@ function rawnsdata() {
 		Memory.writeU8(buf.add(i), i);
 	}
 	return ObjC.classes.NSData.dataWithBytes_length_(buf, 256);
+}
+
+// 遍历界面元素
+function tranverse_view() { 
+    var appCls = ObjC.classes["NSApplication"] || ObjC.classes["UIApplication"];
+    var mainwin = appCls.sharedApplication().keyWindow();
+    var arr = Array();
+    function find_subviews_internal(view, depth) {
+        if (view == null) {
+            return;
+        }
+        var space = '';
+        for (var i = 0; i < depth; i++) {
+            space += '-';
+        }
+        var text = '';
+        var ctrlname = view.class().toString();
+        if (view.isKindOfClass_(ObjC.classes.UILabel)) {
+            text = view.text();
+        }
+        var responder = '';
+        if (view.isKindOfClass_(ObjC.classes.UIControl)) {
+            var targets = view.allTargets().allObjects();
+            var targetcount = targets.count();
+            var events = view.allControlEvents();
+            for (var i = 0; i < targetcount; i++) {
+                var target = targets.objectAtIndex_(i);
+                var actions = view.actionsForTarget_forControlEvent_(target, events);
+                var actioncount = actions.count();
+                for (var j = 0; j < actioncount; j++) {
+                    responder += actions.objectAtIndex_(j) + ',';
+                }
+            }
+        }
+        var msg = space + ctrlname + " " + view.handle;
+        if (text != '') {
+            msg += " => " + text;
+        }
+        if (responder != '') {
+            msg += " selectors= " + responder;
+        }
+        console.log(msg);
+        var subviews = view.subviews();
+        var subviewcount = subviews.count();
+        for (var i = 0; i < subviewcount; i++) {
+            var subview = subviews.objectAtIndex_(i);
+            find_subviews_internal(subview, depth + 1);
+        }
+    }
+
+    find_subviews_internal(mainwin, 0);
 }
