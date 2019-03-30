@@ -1,0 +1,71 @@
+enum {
+    kCCEncrypt = 0, 
+    kCCDecrypt,    
+
+	kCCAlgorithmAES128 = 0,
+    kCCAlgorithmAES = 0,
+    kCCAlgorithmDES,
+    kCCAlgorithm3DES,       
+    kCCAlgorithmCAST,       
+    kCCAlgorithmRC4,
+    kCCAlgorithmRC2,   
+    kCCAlgorithmBlowfish,
+	
+	kCCOptionPKCS7Padding   = 0x0001,
+    kCCOptionECBMode        = 0x0002,
+	
+	kCCKeySizeAES128          = 16,
+    kCCKeySizeAES192          = 24,
+    kCCKeySizeAES256          = 32,
+    kCCKeySizeDES             = 8,
+    kCCKeySize3DES            = 24,
+    kCCKeySizeMinCAST         = 5,
+    kCCKeySizeMaxCAST         = 16,
+    kCCKeySizeMinRC4          = 1,
+    kCCKeySizeMaxRC4          = 512,
+    kCCKeySizeMinRC2          = 1,
+    kCCKeySizeMaxRC2          = 128,
+    kCCKeySizeMinBlowfish     = 8,
+    kCCKeySizeMaxBlowfish     = 56,
+	
+	kCCBlockSizeAES128        = 16,
+    kCCBlockSizeDES           = 8,
+    kCCBlockSize3DES          = 8,
+    kCCBlockSizeCAST          = 8,
+    kCCBlockSizeRC2           = 8,
+    kCCBlockSizeBlowfish      = 8,
+	
+	kCCContextSizeAES128	= 404,
+    kCCContextSizeDES		= 240,
+    kCCContextSize3DES		= 496,
+    kCCContextSizeCAST		= 240,
+    kCCContextSizeRC4		= 1072,
+	
+	kCCModeECB		= 1,
+	kCCModeCBC		= 2,
+	kCCModeCFB		= 3,
+	kCCModeCTR		= 4,
+	kCCModeF8		= 5, // Unimplemented for now (not included)
+	kCCModeLRW		= 6, // Unimplemented for now (not included)
+	kCCModeOFB		= 7,
+	kCCModeXTS		= 8,
+	kCCModeRC4		= 9,
+	kCCModeCFB8		= 10,
+};
+typedef uint32_t CCOperation;
+typedef uint32_t CCAlgorithm;
+typedef uint32_t CCOptions;
+typedef uint32_t CCCryptorStatus;
+  
+CCCryptorStatus CCCrypt(
+    CCOperation op,         /* kCCEncrypt, etc. */
+    CCAlgorithm alg,        /* kCCAlgorithmAES128, etc. */
+    CCOptions options,      /* kCCOptionPKCS7Padding, etc. */
+    const void *key,
+    size_t keyLength,
+    const void *iv,         /* optional initialization vector */
+    const void *dataIn,     /* optional per op and alg */
+    size_t dataInLength,
+    void *dataOut,          /* data RETURNED here */
+    size_t dataOutAvailable,
+    size_t *dataOutMoved);
