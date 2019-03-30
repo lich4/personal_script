@@ -73,7 +73,7 @@ def addobjcref():
     ]
     # find the segment which contains objc method names
     curseg = FirstSeg()
-    while curseg != 0xffffffff:
+    while curseg != 0xffffffff and curseg != 0xffffffffffffffff:
         if "__objc_methname" == SegName(curseg):
             methnamebegin = SegStart(curseg)
             methnameend = SegEnd(curseg)
@@ -88,7 +88,7 @@ def addobjcref():
     # get objc func table
     funcmap = {}
     addr = PrevFunction(-1)
-    while addr != 0xffffffff:
+    while addr != 0xffffffff and addr != 0xffffffffffffffff:
         curname = GetFunctionName(addr)
         if -1 != curname.find('['):
             curname = curname.replace("[", "").replace("]", "")
@@ -105,7 +105,7 @@ def addobjcref():
             farr = funcmap[k]
             # find xref to code and make xref for each
             curref = DfirstB(v)
-            while curref != 0xffffffff:
+            while curref != 0xffffffff and curref != 0xffffffffffffffff:
                 for f in farr:
                     addxref(curref, f, v)
                 curref = DnextB(v, curref)
