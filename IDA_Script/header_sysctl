@@ -63,7 +63,28 @@
 #define	KERN_AIOMAX		46	
 #define	KERN_AIOPROCMAX		47	
 #define	KERN_AIOTHREADS		48	
+#define KERN_COREFILE        50    
+#define KERN_COREDUMP        51    
+#define    KERN_SUGID_COREDUMP    52    
+#define    KERN_PROCDELAYTERM    53    
+#define KERN_SHREG_PRIVATIZABLE    54    
+#define    KERN_LOW_PRI_WINDOW    56    
+#define    KERN_LOW_PRI_DELAY    57    
+#define    KERN_POSIX        58    
+#define    KERN_USRSTACK64        59    
+#define KERN_NX_PROTECTION    60    
+#define    KERN_TFP         61    
+#define    KERN_PROCNAME         62    
+#define    KERN_THALTSTACK        63    
+#define    KERN_SPECULATIVE_READS    64    
+#define    KERN_OSVERSION        65    
+#define    KERN_SAFEBOOT        66    
 
+#define KERN_RAGEVNODE        68
+#define KERN_TTY        69    
+#define KERN_CHECKOPENEVT       70      
+#define    KERN_THREADNAME        71    
+#define    KERN_MAXID        72    
 
 /* 
  * KERN_PROC subtypes
