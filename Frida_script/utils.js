@@ -1,4 +1,11 @@
+var NSData = ObjC.classes.NSData;
+var NSString = ObjC.classes.NSString;
+
 /* JavaScript String -> NSString */
+function str(s) {
+    return Memory.allocUtf8String(s);
+}
+
 function nsstr(str) {
     return ObjC.classes.NSString.stringWithUTF8String_(Memory.allocUtf8String(str));
 }
@@ -16,6 +23,49 @@ function nsdata2nsstr(nsdata) {
 /* Print Native Callstack */
 function callstack() {
     console.log(Thread.backtrace(this.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join("\n") + "\n");
+}
+
+/* c function wrapper */
+function getExportFunction(type, name, ret, args) {
+    var nptr;
+    nptr = Module.findExportByName(null, name);
+    if (nptr === null) {
+        console.log("cannot find " + name);
+        return null;
+    } else {
+        if (type === "f") {
+            var funclet = new NativeFunction(nptr, ret, args);
+            if (typeof funclet === "undefined") {
+                console.log("parse error " + name);
+                return null;
+            }
+            return funclet;
+        } else if (type === "d") {
+            var datalet = Memory.readPointer(nptr);
+            if (typeof datalet === "undefined") {
+                console.log("parse error " + name);
+                return null;
+            }
+            return datalet;
+        }
+    }
+}
+
+function modload(modpath) {
+    var dlopen = getExportFunction("f", "dlopen", "pointer", ["pointer", "int"]);
+    dlopen(str(modpath), 1);
+}
+
+function getscreensize() {
+    var UIScreen = ObjC.classes.UIScreen;
+    return UIScreen.mainScreen().bounds()[1];
+}
+
+function click(x, y) {
+    // https://github.com/zjjno/PTFakeTouchDemo.git 编译为dylib
+    modload("/Library/MobileSubstrate/DynamicLibraries/PTFakeTouch.dylib")
+    var touchxy = getExportFunction("f", "touchxy", "void", ["int", "int"]);
+    touchxy(x, y);
 }
 
 function _utf8_encode(string) {
