@@ -299,3 +299,34 @@ function dumpModule(name) {
 	close(fmodule);
 	close(foldmodule);
 }	
+
+function dumpheader() {
+    var base = Process.enumerateModulesSync()[0].base;
+    var magic = Memory.readU32(base);
+    var is64bit = false;
+    if (magic == 0xfeedfacf) {
+        is64bit = true;
+    } else if (magic == 0xfeedface) {
+        is64bit = false;
+    } else {
+        console.log('Unknown magic:' + magic);
+    }
+    var cmdnum = Memory.readU32(base.add(0x10));
+    var cmdoff = is64bit?0x20:0x1C;
+    for (var i = 0; i < cmdnum; i++) {
+        var cmd = Memory.readU32(base.add(cmdoff));
+        var cmdsize = Memory.readU32(base.add(cmdoff + 4));
+        cmdoff += cmdsize;
+        if (cmd == 1) { // SEGMENT
+            var segname = Memory.readUtf8String(base.add(cmdoff + 8))
+            var vmaddr = Memory.readU32(base.add(cmdoff + 0x18));
+            var vmsize = Memory.readU32(base.add(cmdoff + 0x1C));
+            console.log(segname + ' ' + vmaddr.toString(16) + '-' + (vmaddr+vmsize).toString(16));
+        } else if (cmd == 25) { // SEGMENT_64
+            var segname = Memory.readUtf8String(base.add(cmdoff + 8))
+            var vmaddr = Memory.readU32(base.add(cmdoff + 0x18));
+            var vmsize = Memory.readU32(base.add(cmdoff + 0x20));
+            console.log(segname + ' ' + vmaddr.toString(16) + '-' + (vmaddr+vmsize).toString(16));
+        }
+    }
+}
