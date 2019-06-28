@@ -25,6 +25,10 @@ function callstack() {
     console.log(Thread.backtrace(this.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join("\n") + "\n");
 }
 
+function callstack_() {
+	console.log(ObjC.classes.NSThread.callStackSymbols().toString());
+}
+
 /* c function wrapper */
 function getExportFunction(type, name, ret, args) {
     var nptr;
@@ -198,10 +202,12 @@ function getmoduleclass(module) {
 	var objc_copyClassNamesForImage = new NativeFunction(Module.findExportByName(null, "objc_copyClassNamesForImage"), "pointer", ["pointer", "pointer"]);
 	var classptrarr = objc_copyClassNamesForImage(Memory.allocUtf8String(module), pcount);
 	var count = Memory.readU32(pcount);
+	var result = Array();
 	for (var i = 0; i < count; i++) {
 		var classptr = Memory.readPointer(classptrarr.add(Process.pointerSize * i));
-		console.log(Memory.readUtf8String(classptr));
+		result.push(Memory.readUtf8String(classptr));
 	}
+	return result;
 }
 
 /* Get Objective-C Method of class */
@@ -217,11 +223,13 @@ function getclassmethod(classname) {
     var method_getImplementation = new NativeFunction(Module.findExportByName(null, "method_getImplementation"), "pointer", ["pointer"]);
     var methodptrarr = class_copyMethodList(class_, pcount);
     var count = Memory.readU32(pcount);
+	var result = new Array();
     for (var i = 0; i < count; i++) {
         var method = Memory.readPointer(methodptrarr.add(Process.pointerSize * i));
         var name = Memory.readUtf8String(method_getName(method));
         var imp = method_getImplementation(method);
-        console.log("-[" + classname + " " + name + "] -> " + imp);
+		result.push({"name": "- " + name, "imp":imp});
+        //console.log("-[" + classname + " " + name + "] -> " + imp);
     }
 	Memory.writeU32(pcount, 0);
 	methodptrarr = class_copyMethodList(metaclass_, pcount);
@@ -230,8 +238,10 @@ function getclassmethod(classname) {
         var method = Memory.readPointer(methodptrarr.add(Process.pointerSize * i));
         var name = Memory.readUtf8String(method_getName(method));
         var imp = method_getImplementation(method);
-        console.log("+[" + classname + " " + name + "] -> " + imp);
+		result.push({"name": "+ " + name, "imp":imp});
+        //console.log("+[" + classname + " " + name + "] -> " + imp);
     }
+	return result;
 }
 
 // 强制过证书校验
@@ -243,51 +253,34 @@ function forcetrustcert() {
 			return 0;
 		}, 'int', ['pointer', 'pointer'])
 	);
-	if (typeof(ObjC.classes.AFSecurityPolicy) !== 'undefined') {
-		Interceptor.attach(ObjC.classes.AFSecurityPolicy['- evaluateServerTrust:forDomain:'].implementation, {
-			onEnter: function (args) {
-				console.log('pass -[AFSecurityPolicy evaluateServerTrust:forDomain:]')
-			},
-			onLeave: function (retval) {
-				retval.replace(ptr('0x1'));
-			}
+	/* 获取app路径下的可执行模块 hook存在以下方法的类
+		- evaluateServerTrust:forDomain:
+		- allowInvalidCertificates
+		- shouldContinueWithInvalidCertificate
+	*/
+	var apppath = Process.enumerateModulesSync()[0]['path'];
+	apppath = apppath.slice(0, apppath.lastIndexOf('/'));
+	getmodule().forEach(function (module, i) {
+		if (module.indexOf(apppath) != 0) return;
+		getmoduleclass(module).forEach(function (classname, j) {
+			getclassmethod(classname).forEach(function (methodinfo, k) {
+				var name = methodinfo['name'];
+				if (name == '- evaluateServerTrust:forDomain:' ||
+						name == '- allowInvalidCertificates' ||
+						name == '- shouldContinueWithInvalidCertificate') {
+					console.log("forcetrustcert " + classname + " " + name);
+					Interceptor.attach(methodinfo['imp'], {
+						onEnter: function (args) {
+							console.log("forcetrustcert " + classname + " " + name);
+						},
+						onLeave: function (retval) {
+							retval.replace(ptr('0x1'));
+						}
+					});
+				}
+			});
 		});
-		
-		Interceptor.attach(ObjC.classes.AFSecurityPolicy['- setAllowInvalidCertificates:'].implementation, {
-			onEnter: function (args) {
-				args[2] = ptr('0x1');
-				console.log('pass -[AFSecurityPolicy setAllowInvalidCertificates:]')
-			},
-			onLeave: function (retval) {
-			}
-		});
-		Interceptor.attach(ObjC.classes.AFSecurityPolicy['- allowInvalidCertificates'].implementation, {
-			onEnter: function (args) {
-				console.log('pass -[AFSecurityPolicy setAllowInvalidCertificates:]')
-			},
-			onLeave: function (retval) {
-				retval.replace(ptr('0x1'));
-			}
-		});
-	};
-	if (typeof(ObjC.classes.MKNetworkOperation) !== 'undefined') {
-		Interceptor.attach(ObjC.classes.MKNetworkOperation['- setShouldContinueWithInvalidCertificate:'].implementation, {
-			onEnter: function (args) {
-				args[2] = ptr('0x1');
-				console.log('pass -[MKNetworkOperation setShouldContinueWithInvalidCertificate:]')
-			},
-			onLeave: function (retval) {
-			}
-		});	
-		Interceptor.attach(ObjC.classes.MKNetworkOperation['- shouldContinueWithInvalidCertificate'].implementation, {
-			onEnter: function (args) {
-				console.log('pass -[MKNetworkOperation shouldContinueWithInvalidCertificate]')
-			},
-			onLeave: function (retval) {
-				retval.replace(ptr('0x1'));
-			}
-		});
-	}
+	});
 }
 
 // 随机字符串
