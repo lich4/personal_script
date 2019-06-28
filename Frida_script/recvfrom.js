@@ -8,8 +8,7 @@
 	var args = this.gargs;
     var sockfd = args[0].toInt32();
 	var buf = args[1];
-	var len = args[2].toInt32();
-	console.log('dst_addr='+args[4]);
+	var len = retval.toInt32();
 	var dest_addr = args[4];
 	if (dest_addr.equals(0)) {
 		dest_addr = Memory.alloc(16);
@@ -19,6 +18,7 @@
 		getpeername(sockfd, dest_addr, addr_len);
 	}
 	var sin_family = Memory.readU8(dest_addr.add(1));
+	if (sin_family != 2) return;
 	var sin_port = Memory.readU16(dest_addr.add(2));
 	sin_port = ((sin_port&0xff)<<8)|((sin_port>>8)&0xff);
 	var sin_addr = Memory.readU32(dest_addr.add(4));
