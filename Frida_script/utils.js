@@ -180,32 +180,57 @@ function getPubkeyFromKeyref(seckeyref) {
     return ObjC.Object(Memory.readPointer(publicKeyBits));
 }
 
+/* Get all modules */
+function getmodule() {
+	var modules = Process.enumerateModulesSync();
+	return modules.map(function (item) {
+		return item['path'];
+	});
+}
+
+/* Get all class in module */
+function getmoduleclass(module) {
+	if (module == null) {
+		module = Process.enumerateModulesSync()[0]['path'];
+	}
+	var pcount = Memory.alloc(4);
+	Memory.writeU32(pcount, 0);
+	var objc_copyClassNamesForImage = new NativeFunction(Module.findExportByName(null, "objc_copyClassNamesForImage"), "pointer", ["pointer", "pointer"]);
+	var classptrarr = objc_copyClassNamesForImage(Memory.allocUtf8String(module), pcount);
+	var count = Memory.readU32(pcount);
+	for (var i = 0; i < count; i++) {
+		var classptr = Memory.readPointer(classptrarr.add(Process.pointerSize * i));
+		console.log(Memory.readUtf8String(classptr));
+	}
+}
+
 /* Get Objective-C Method of class */
-function getclassmethod(cls) {
+function getclassmethod(classname) {
+	var objc_getClass = new NativeFunction(Module.findExportByName(null, "objc_getClass"), "pointer", ["pointer"]);
+	var objc_getMetaClass = new NativeFunction(Module.findExportByName(null, "objc_getMetaClass"), "pointer", ["pointer"]);
+	var class_ = objc_getClass(Memory.allocUtf8String(classname));
+	var metaclass_ = objc_getMetaClass(Memory.allocUtf8String(classname));
     var pcount = Memory.alloc(4);
     Memory.writeU32(pcount, 0);
     var class_copyMethodList = new NativeFunction(Module.findExportByName(null, "class_copyMethodList"), "pointer", ["pointer", "pointer"]);
     var method_getName = new NativeFunction(Module.findExportByName(null, "method_getName"), "pointer", ["pointer"]);
     var method_getImplementation = new NativeFunction(Module.findExportByName(null, "method_getImplementation"), "pointer", ["pointer"]);
-    var methodptrarr = class_copyMethodList(cls.class().handle, pcount);
+    var methodptrarr = class_copyMethodList(class_, pcount);
     var count = Memory.readU32(pcount);
     for (var i = 0; i < count; i++) {
         var method = Memory.readPointer(methodptrarr.add(Process.pointerSize * i));
         var name = Memory.readUtf8String(method_getName(method));
         var imp = method_getImplementation(method);
-        console.log(name + " -> " + imp + "\n");
+        console.log("-[" + classname + " " + name + "] -> " + imp);
     }
-}
-
-/* Get Objective-C Property of object */
-function getclassproperty(cls) {
-    var pcount = Memory.alloc(4);
-    Memory.writeU32(pcount, 0);
-    var class_copyPropertyList = new NativeFunction(Module.findExportByName(null, "class_copyPropertyList"), "pointer", ["pointer", "pointer"]);
-    class_copyPropertyList(cls.class().handle, pcount);
-    var count = Memory.readU32(pcount);
+	Memory.writeU32(pcount, 0);
+	methodptrarr = class_copyMethodList(metaclass_, pcount);
+    count = Memory.readU32(pcount);
     for (var i = 0; i < count; i++) {
-
+        var method = Memory.readPointer(methodptrarr.add(Process.pointerSize * i));
+        var name = Memory.readUtf8String(method_getName(method));
+        var imp = method_getImplementation(method);
+        console.log("+[" + classname + " " + name + "] -> " + imp);
     }
 }
 
