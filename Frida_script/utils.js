@@ -331,9 +331,11 @@ function tranverse_view() {
 				for (var i = 0; i < targetcount; i++) {
 					var target = targets.objectAtIndex_(i);
 					var actions = view.actionsForTarget_forControlEvent_(target, events);
-					var actioncount = actions.count();
-					for (var j = 0; j < actioncount; j++) {
-						responder += actions.objectAtIndex_(j) + ',';
+					if (actions != null) {
+						var actioncount = actions.count();
+						for (var j = 0; j < actioncount; j++) {
+							responder += actions.objectAtIndex_(j) + ',';
+						}
 					}
 				}
 			}
