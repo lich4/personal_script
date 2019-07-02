@@ -325,16 +325,18 @@ function tranverse_view() {
         var responder = '';
         if (view.isKindOfClass_(ObjC.classes.UIControl)) {
             var targets = view.allTargets().allObjects();
-            var targetcount = targets.count();
-            var events = view.allControlEvents();
-            for (var i = 0; i < targetcount; i++) {
-                var target = targets.objectAtIndex_(i);
-                var actions = view.actionsForTarget_forControlEvent_(target, events);
-                var actioncount = actions.count();
-                for (var j = 0; j < actioncount; j++) {
-                    responder += actions.objectAtIndex_(j) + ',';
-                }
-            }
+			if (targets != null) {
+				var targetcount = targets.count();
+				var events = view.allControlEvents();
+				for (var i = 0; i < targetcount; i++) {
+					var target = targets.objectAtIndex_(i);
+					var actions = view.actionsForTarget_forControlEvent_(target, events);
+					var actioncount = actions.count();
+					for (var j = 0; j < actioncount; j++) {
+						responder += actions.objectAtIndex_(j) + ',';
+					}
+				}
+			}
         }
         var msg = space + ctrlname + " " + view.handle;
         if (text != '') {
@@ -345,11 +347,13 @@ function tranverse_view() {
         }
         console.log(msg);
         var subviews = view.subviews();
-        var subviewcount = subviews.count();
-        for (var i = 0; i < subviewcount; i++) {
-            var subview = subviews.objectAtIndex_(i);
-            find_subviews_internal(subview, depth + 1);
-        }
+		if (subviews != null) {
+			var subviewcount = subviews.count();
+			for (var i = 0; i < subviewcount; i++) {
+				var subview = subviews.objectAtIndex_(i);
+				find_subviews_internal(subview, depth + 1);
+			}
+		}
     }
 
     find_subviews_internal(mainwin, 0);
