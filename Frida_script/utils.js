@@ -210,12 +210,20 @@ function getmoduleclass(module) {
 	return result;
 }
 
+function getclassmodule(classname) {
+    var objc_getClass = new NativeFunction(Module.findExportByName(null, "objc_getClass"), "pointer", ["pointer"]);
+    var class_getImageName = new NativeFunction(Module.findExportByName(null, "class_getImageName"), "pointer",
+        ["pointer"]);
+    var class_ = objc_getClass(Memory.allocUtf8String(classname));
+    return Memory.readUtf8String(class_getImageName(class_));
+}
+
 /* Get Objective-C Method of class */
 function getclassmethod(classname) {
-	var objc_getClass = new NativeFunction(Module.findExportByName(null, "objc_getClass"), "pointer", ["pointer"]);
-	var objc_getMetaClass = new NativeFunction(Module.findExportByName(null, "objc_getMetaClass"), "pointer", ["pointer"]);
-	var class_ = objc_getClass(Memory.allocUtf8String(classname));
-	var metaclass_ = objc_getMetaClass(Memory.allocUtf8String(classname));
+    var objc_getClass = new NativeFunction(Module.findExportByName(null, "objc_getClass"), "pointer", ["pointer"]);
+    var objc_getMetaClass = new NativeFunction(Module.findExportByName(null, "objc_getMetaClass"), "pointer", ["pointer"]);
+    var class_ = objc_getClass(Memory.allocUtf8String(classname));
+    var metaclass_ = objc_getMetaClass(Memory.allocUtf8String(classname));
     var pcount = Memory.alloc(4);
     Memory.writeU32(pcount, 0);
     var class_copyMethodList = new NativeFunction(Module.findExportByName(null, "class_copyMethodList"), "pointer", ["pointer", "pointer"]);
