@@ -218,6 +218,18 @@ function getclassmodule(classname) {
     return Memory.readUtf8String(class_getImageName(class_));
 }
 
+function getsymbolmodule(symbolname) {
+    var dladdr = new NativeFunction(Module.findExportByName(null, "dladdr"), "int", ["pointer", "pointer"]);
+    var info = Memory.alloc(Process.pointerSize * 4);
+    dladdr(Module.findExportByName(null, symbolname), info);
+    return {
+        "fname": Memory.readUtf8String(Memory.readPointer(info)),
+        "fbase": Memory.readPointer(info.add(Process.pointerSize)),
+        "sname": Memory.readUtf8String(Memory.readPointer(info.add(Process.pointerSize * 2))),
+        "saddr": Memory.readPointer(info.add(Process.pointerSize * 3)),
+    }
+}
+
 /* Get Objective-C Method of class */
 function getclassmethod(classname) {
     var objc_getClass = new NativeFunction(Module.findExportByName(null, "objc_getClass"), "pointer", ["pointer"]);

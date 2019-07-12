@@ -144,6 +144,12 @@ function putPt(addr, n) {
     return Memory.writePointer(addr, n);
 }
 
+function geterr() {
+    var strerror = getExportFunction("f", "strerror", "pointer", ["int"]);
+    var errno = getExportFunction("d", "errno");
+    return Memory.readUtf8String(strerror(errno.toInt32()));
+}
+
 function malloc(size) {
     return Memory.alloc(size);
 }
@@ -179,30 +185,39 @@ function modload(modpath) {
 }
 
 function print_sysctl_str(name, sysctlbyname, sysctlnametomib, sysctl, mibp, sizep, bufsize, bsize, buf) {
-    Memory.writeU32(sizep, 2);
+    Memory.writeU64(buf, 0);
+    Memory.writeU32(sizep, 64);
     Memory.writeU32(bufsize, bsize);
-    sysctlnametomib(str(name), mibp, sizep);
-    sysctl(mibp, 2, buf, bufsize, ptr("0"), 0);
-    console.log(name, getStr(buf));
-    sysctlbyname(str(name), buf, bufsize, ptr("0"), 0);
-    console.log(name, getStr(buf));
+    if (0 == sysctlnametomib(str(name), mibp, sizep)) {
+        sysctl(mibp, Memory.readU8(sizep), buf, bufsize, ptr("0"), 0);
+        console.log(name, 'bymib', getStr(buf));
+    }
+    Memory.writeU64(buf, 0);
+    Memory.writeU32(bufsize, bsize);
+    if (0 == sysctlbyname(str(name), buf, bufsize, ptr("0"), 0)) {
+        console.log(name, 'byname', getStr(buf));
+    }
 }
 
 function print_sysctl_u32(name, sysctlbyname, sysctlnametomib, sysctl, mibp, sizep, bufsize, bsize, buf) {
-    Memory.writeU32(sizep, 2);
+    Memory.writeU64(buf, 0);
+    Memory.writeU32(sizep, 64);
     Memory.writeU32(bufsize, bsize);
-    sysctlnametomib(str(name), mibp, sizep);
-    sysctl(mibp, 2, buf, bufsize, ptr("0"), 0);
-    console.log(name, getU32(buf));
+    if (0 == sysctlnametomib(str(name), mibp, sizep)) {
+        sysctl(mibp, Memory.readU8(sizep), buf, bufsize, ptr("0"), 0);
+        console.log(name, 'bymib', getU32(buf));
+    }
+    Memory.writeU64(buf, 0);
     Memory.writeU32(bufsize, bsize);
-    sysctlbyname(str(name), buf, bufsize, ptr("0"), 0);
-    console.log(name, getU32(buf));
+    if (0 == sysctlbyname(str(name), buf, bufsize, ptr("0"), 0)) {
+        console.log(name, 'byname', getU32(buf));
+    }
 }
 
 var sleep = getExportFunction("f", "sleep", "void", ["int"]);
 
 function get_location() {
-    var waitforstart = 2;
+    var waitforstart = 5;
     var location = "please enable location service in iOS settings";
     var locman = null;
     var locproxy = null;
@@ -238,18 +253,13 @@ function get_location() {
         locman.requestAlwaysAuthorization();
         locman.setDesiredAccuracy_(-1.0);
         locman.startUpdatingLocation();
+        waitforstart = 0;
     })
-    while (waitforstart--) {
+    while (waitforstart-- > 0) {
         sleep(1);
     }
     locman.stopUpdatingLocation();
     return location;
-}
-
-function geterr() {
-    var strerror = getExportFunction("f", "strerror", "pointer", ["int"]);
-    var errno = getExportFunction("d", "errno");
-    return Memory.readUtf8String(strerror(errno.toInt32()));
 }
 
 function get_networkinfo() {
@@ -324,6 +334,7 @@ function get_deviceinfo() {
     var buf = Memory.alloc(bsize);
     var bufsize = Memory.alloc(4);
 
+    /*
     var _SYS_NAMELEN = 256;
     var uname = getExportFunction("f", "uname", "int", ["pointer"]);
     var utsname = Memory.alloc(_SYS_NAMELEN * 5);
@@ -340,8 +351,9 @@ function get_deviceinfo() {
         ["pointer", "int", "pointer", "pointer", "pointer", "int"]);
     var sysctlnametomib = getExportFunction("f", "sysctlnametomib", "int",
         ["pointer", "pointer", "pointer"]);
-    var mibp = Memory.alloc(8);
+    var mibp = Memory.alloc(256);
     var sizep = Memory.alloc(4);
+
     print_sysctl_str("kern.osrelease", sysctlbyname, sysctlnametomib, sysctl, mibp, sizep, bufsize, bsize, buf);
     print_sysctl_str("kern.version", sysctlbyname, sysctlnametomib, sysctl, mibp, sizep, bufsize, bsize, buf);
     print_sysctl_str("kern.hostname", sysctlbyname, sysctlnametomib, sysctl, mibp, sizep, bufsize, bsize, buf);
@@ -370,7 +382,7 @@ function get_deviceinfo() {
     var NSProcessInfo = ObjC.classes.NSProcessInfo.processInfo();
     console.log("NSProcessInfo.hostName", NSProcessInfo.hostName());
     console.log("NSProcessInfo.operatingSystemVersionString", NSProcessInfo.operatingSystemVersionString());
-    console.log("NSProcessInfo.operatingSystemVersion", NSProcessInfo.operatingSystemVersion());
+    // console.log("NSProcessInfo.operatingSystemVersion", NSProcessInfo.operatingSystemVersion());
     console.log("NSProcessInfo.processorCount", NSProcessInfo.processorCount());
     console.log("NSProcessInfo.activeProcessorCount", NSProcessInfo.activeProcessorCount());
     console.log("NSProcessInfo.physicalMemory", NSProcessInfo.physicalMemory());
@@ -380,12 +392,7 @@ function get_deviceinfo() {
     var ASIdentifierManager = ObjC.classes.ASIdentifierManager.sharedManager();
     console.log("ASIdentifierManager.advertisingIdentifier", ASIdentifierManager.advertisingIdentifier());
     console.log("ASIdentifierManager.isAdvertisingTrackingEnabled", ASIdentifierManager.isAdvertisingTrackingEnabled());
-
-    ObjC.schedule(ObjC.mainQueue, function() {
-        var UIWebView = ObjC.classes.UIWebView.alloc().init();
-        var useragent = UIWebView.stringByEvaluatingJavaScriptFromString_(nsstr("navigator.userAgent"));
-        console.log("UserAgent", useragent);
-    })
+    */
 
     var ctinfo = ObjC.classes.CTTelephonyNetworkInfo.alloc().init();
     var carrier = ctinfo.subscriberCellularProvider();
@@ -411,19 +418,31 @@ function get_deviceinfo() {
     console.log("NSUserDefaults.AppleKeyboardsExpanded", NSUserDefaults.objectForKey_(nsstr('AppleKeyboardsExpanded')));
 
     var UITextInputMode = ObjC.classes.UITextInputMode;
-    console.log("UITextInputMode.primaryLanguage", UITextInputMode.currentInputMode().primaryLanguage());
+    var obj = UITextInputMode.currentInputMode();
+    console.log("UITextInputMode.primaryLanguage", obj.displayName(), obj.extendedDisplayName(),
+        obj.identifier(), obj.identifierWithLayouts(), obj.languageWithRegion(), obj.normalizedIdentifier(),
+        obj.primaryLanguage());
     var tinputmodes = UITextInputMode.activeInputModes();
     for (var i = 0; i < tinputmodes.count(); i++) {
-        console.log("UITextInputMode.activeInputModes", tinputmodes.objectAtIndex_(i).primaryLanguage());
+        var obj = tinputmodes.objectAtIndex_(i);
+        console.log("UITextInputMode.activeInputModes", obj.displayName(), obj.extendedDisplayName(),
+            obj.identifier(), obj.identifierWithLayouts(), obj.languageWithRegion(), obj.normalizedIdentifier(),
+            obj.primaryLanguage());
     }
 
     var key = ObjC.classes.UIKeyboardInputModeController.sharedInputModeController();
-    console.log("UIKeyboardInputMode.currentInputMode", key.currentInputMode().identifier());
+    var obj = key.currentInputMode();
+    console.log("UIKeyboardInputMode.currentInputMode", obj.displayName(), obj.extendedDisplayName(),
+        obj.identifier(), obj.identifierWithLayouts(), obj.languageWithRegion(), obj.normalizedIdentifier(),
+        obj.primaryLanguage());
     var kinputmods = key.extensionInputModes();
     for (var i = 0; i < kinputmods.count(); i++) {
-        console.log("UIKeyboardInputMode.extensionInputModes", tinputmodes.objectAtIndex_(i).identifier());
+        var obj = tinputmodes.objectAtIndex_(i);
+        console.log("UIKeyboardInputMode.extensionInputModes", obj.displayName(), obj.extendedDisplayName(),
+            obj.identifier(), obj.identifierWithLayouts(), obj.languageWithRegion(), obj.normalizedIdentifier(),
+            obj.primaryLanguage());
     }
-
+  
     var NSTimeZone = ObjC.classes.NSTimeZone;
     console.log("systemTimeZone", NSTimeZone.systemTimeZone().name());
     console.log("defaultTimeZone", NSTimeZone.defaultTimeZone().name());
@@ -446,6 +465,18 @@ function get_deviceinfo() {
     var attrs = NSFileManager.defaultManager().attributesOfFileSystemForPath_error_(docpath, error);
     console.log("NSFileManager.NSFileSystemSize", attrs.objectForKey_(nsstr("NSFileSystemSize")));
     console.log("NSFileManager.NSFileSystemFreeSize", attrs.objectForKey_(nsstr("NSFileSystemFreeSize")));
+
+    var useragent = '';
+    var waitforstart = 5;
+    ObjC.schedule(ObjC.mainQueue, function() {
+        var UIWebView = ObjC.classes.UIWebView.alloc().init();
+        useragent = UIWebView.stringByEvaluatingJavaScriptFromString_(nsstr("navigator.userAgent"));
+        waitforstart = 0;
+    })
+    while (waitforstart-- > 0) {
+        sleep(1);
+    }
+    console.log("UserAgent", useragent);
 
     var UIScreen = ObjC.classes.UIScreen.mainScreen();
     var UIApplication = ObjC.classes.UIApplication.sharedApplication();
