@@ -266,13 +266,14 @@ function getclassmethod(classname) {
 
 // 强制过证书校验
 function forcetrustcert() {
-	Interceptor.replace(Module.findExportByName(null, 'SecTrustEvaluate'),
-		new NativeCallback(function (trust, result) {
-			Memory.writePointer(result, ptr('0x1'));
-			 console.log('pass SecTrustEvaluate');
-			return 0;
-		}, 'int', ['pointer', 'pointer'])
-	);
+	Interceptor.attach(Module.findExportByName(null, 'SecTrustEvaluate'), {
+		onEnter: function (args) {
+			console.log("forcetrustcert SecTrustEvaluate");
+		},
+		onLeave: function (retval) {
+			retval.replace(ptr('0x1'));
+		}
+	});
 	/* 获取app路径下的可执行模块 hook存在以下方法的类
 		- evaluateServerTrust:forDomain:
 		- allowInvalidCertificates
