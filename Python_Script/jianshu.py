@@ -48,7 +48,6 @@ def RequestWithProxy(url, proxy, headers, postdata, timeout=socket._GLOBAL_DEFAU
 
 
 def RequestWithDefProxy(url, headers, postdata, timeout=socket._GLOBAL_DEFAULT_TIMEOUT):
-    return RequestWithProxy(url, '192.168.1.8:8888', headers, postdata, timeout)
     try:
         opener = urllib_.build_opener()
         content = opener.open(urllib_.Request(url, headers=headers, data=postdata), timeout=timeout).read()
@@ -74,7 +73,6 @@ def randidfv():
 
 def JianshuPublish(username, password, title, content):
     xauth1pre = '2900143726e290a4d84a3bc8c7288e7e'
-    xauth2pre = '99a017cea4bfa4cb'
     data = dict()
     ts = '%d' % int(time.time())
     headers = {
@@ -106,13 +104,14 @@ def JianshuPublish(username, password, title, content):
         return False
     FLog('JianshuPublish login success')
 
+    ts = '%d' % int(time.time())
     headers = {
         'Accept': '*/*',
         'Content-Type': 'application/x-www-form-urlencoded',
         'User-Agent': 'Hugo',
         'X-App-Name': 'hugo',
         'X-Auth-1': md5(xauth1pre + ts),
-        'X-Auth-2': md5(xauth2pre + ts),
+        'X-Auth-2': md5(data['mobile_token'] + ts),
         'X-App-Version': '5.12.0',
         'X-Device-Guid': randidfv(),
         'X-NETWORK': '1',
@@ -145,7 +144,7 @@ def JianshuPublish(username, password, title, content):
         'User-Agent': 'Hugo',
         'X-App-Name': 'hugo',
         'X-Auth-1': md5(xauth1pre + ts),
-        'X-Auth-2': md5(xauth2pre + ts),
+        'X-Auth-2': md5(data['mobile_token'] + ts),
         'X-App-Version': '5.12.0',
         'X-Device-Guid': randidfv(),
         'X-NETWORK': '1',
@@ -169,9 +168,9 @@ def JianshuPublish(username, password, title, content):
         FLog('JianshuPublish publicize data error')
         return False
     FLog('JianshuPublish publicize success')
+    FLog(json.dumps(data, indent=2))
     return True
 
 
 if __name__ == '__main__':
     JianshuPublish('手机号', '密码', '测试md', 'test md content')
-
