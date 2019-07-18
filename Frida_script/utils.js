@@ -381,3 +381,28 @@ function tranverse_view() {
 
     find_subviews_internal(mainwin, 0);
 }
+
+function geterr() {
+	var errno = Memory.readU32(Module.findExportByName(null, "errno"));
+	var strerror = new NativeFunction(Module.findExportByName(null, "strerror"), "pointer", ["int"]);
+	console.log(Memory.readUtf8String(strerror(errno)));
+}
+
+function mem2file(path, addr, len) {
+	addr = ptr(addr);
+	var open = new NativeFunction(Module.findExportByName(null, "open"), "int", ["pointer", "int"]);
+	var close = new NativeFunction(Module.findExportByName(null, "close"), "void", ["int"]);
+	var write = new NativeFunction(Module.findExportByName(null, "write"), "int", ["int", "pointer", "int"]); 
+	O_WRONLY = 1;
+	O_CREAT = 0x200;
+	var fd = open(str(path), O_WRONLY | O_CREAT);
+	if (fd == -1) {
+		console.log("open failed");
+		return;
+	}
+	if (write(fd, addr, len) == -1) {
+		console.log("write failed");
+	}
+	close(fd);
+	console.log("write " + path + " success");
+}
