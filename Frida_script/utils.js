@@ -325,6 +325,21 @@ function rawnsdata() {
 	return ObjC.classes.NSData.dataWithBytes_length_(buf, 256);
 }
 
+// 遍历所有alertview
+function dump_alertview() {
+    ObjC.chooseSync(ObjC.classes.UIAlertController).forEach(
+        function(alertcontroller) {
+            var actions = alertcontroller.actions();
+            for (var i = 0; i < actions.count(); i++) {
+                var action = actions.objectAtIndex_(i);
+                var handler = action.handler();
+                if (handler != null) handler = handler.handle;
+                console.log(action.title(), handler);
+            }
+        }
+    );
+}
+
 // 遍历界面元素
 function tranverse_view() { 
     var appCls = ObjC.classes["NSApplication"] || ObjC.classes["UIApplication"];
