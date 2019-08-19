@@ -340,6 +340,13 @@ function dump_alertview() {
     );
 }
 
+function get_object_method_address(object, action) {
+    var class_getMethodImplementation = new NativeFunction(Module.findExportByName(null, "class_getMethodImplementation"), "pointer", ["pointer", "pointer"]);
+    var imp = class_getMethodImplementation(object.class(), ObjC.selector(action));
+    var mod = Process.getModuleByAddress(imp);
+    return mod['name'] + '!' + imp.sub(mod['base'])
+}   
+
 // 遍历界面元素
 function tranverse_view() { 
     var appCls = ObjC.classes["NSApplication"] || ObjC.classes["UIApplication"];
@@ -370,7 +377,10 @@ function tranverse_view() {
 					if (actions != null) {
 						var actioncount = actions.count();
 						for (var j = 0; j < actioncount; j++) {
-							responder += actions.objectAtIndex_(j) + ',';
+                            var clsname = target.class().toString();
+                            var action = actions.objectAtIndex_(j).toString();
+                            var addr = get_object_method_address(target, action)
+							responder += '[' + clsname + ' ' + action + ']=' + addr + ',';
 						}
 					}
 				}
