@@ -230,6 +230,18 @@ function getsymbolmodule(symbolname) {
     }
 }
 
+function getaddressmodule(address) {
+    var dladdr = new NativeFunction(Module.findExportByName(null, "dladdr"), "int", ["pointer", "pointer"]);
+    var info = Memory.alloc(Process.pointerSize * 4);
+    dladdr(ptr(address), info);
+    return {
+        "fname": Memory.readUtf8String(Memory.readPointer(info)),
+        "fbase": Memory.readPointer(info.add(Process.pointerSize)),
+        "sname": Memory.readUtf8String(Memory.readPointer(info.add(Process.pointerSize * 2))),
+        "saddr": Memory.readPointer(info.add(Process.pointerSize * 3)),
+    }
+}
+
 /* Get Objective-C Method of class */
 function getclassmethod(classname) {
     var objc_getClass = new NativeFunction(Module.findExportByName(null, "objc_getClass"), "pointer", ["pointer"]);
@@ -266,14 +278,13 @@ function getclassmethod(classname) {
 
 // 强制过证书校验
 function forcetrustcert() {
-	Interceptor.attach(Module.findExportByName(null, 'SecTrustEvaluate'), {
-		onEnter: function (args) {
-			console.log("forcetrustcert SecTrustEvaluate");
-		},
-		onLeave: function (retval) {
-			retval.replace(ptr('0x1'));
-		}
-	});
+	Interceptor.replace(Module.findExportByName(null, 'SecTrustEvaluate'),
+		new NativeCallback(function (trust, result) {
+			Memory.writePointer(result, ptr('0x1'));
+			 console.log('pass SecTrustEvaluate');
+			return 0;
+		}, 'int', ['pointer', 'pointer'])
+	);
 	/* 获取app路径下的可执行模块 hook存在以下方法的类
 		- evaluateServerTrust:forDomain:
 		- allowInvalidCertificates
@@ -325,7 +336,6 @@ function rawnsdata() {
 	return ObjC.classes.NSData.dataWithBytes_length_(buf, 256);
 }
 
-// 遍历所有alertview
 function dump_alertview() {
     ObjC.chooseSync(ObjC.classes.UIAlertController).forEach(
         function(alertcontroller) {
@@ -347,6 +357,14 @@ function get_object_method_address(object, action) {
     return mod['name'] + '!' + imp.sub(mod['base'])
 }   
 
+function get_function_address(address) {
+    address = ptr(address);
+    var symbol = getaddressmodule(address);
+    var sympath = symbol['fname'];
+    var symname = sympath.split('/')[sympath.split('/').length - 1];
+    return symname + '!' + address.sub(symbol['fbase']);
+}
+
 // 遍历界面元素
 function tranverse_view() { 
     var appCls = ObjC.classes["NSApplication"] || ObjC.classes["UIApplication"];
@@ -366,7 +384,8 @@ function tranverse_view() {
             text = view.text();
         }
         var responder = '';
-        if (view.isKindOfClass_(ObjC.classes.UIControl)) {
+        var iter = true;
+        if (view.respondsToSelector_(ObjC.selector('allTargets'))) {
             var targets = view.allTargets().allObjects();
 			if (targets != null) {
 				var targetcount = targets.count();
@@ -394,8 +413,28 @@ function tranverse_view() {
             msg += " selectors= " + responder;
         }
         console.log(msg);
+        if (view.respondsToSelector_(ObjC.selector('actions'))) {
+            // UIAlertView
+            iter = false;
+            var actions = view.actions();
+            var actioncount = actions.count();
+            for (var j = 0; j < actioncount; j++) {
+                var action = actions.objectAtIndex_(j);
+                var title = action.title().toString();
+                if (action.handler() == null) {
+                    console.log(space + '\taction= ' + title);
+                } else {
+                    var block = action.handler().handle;
+                    var funcaddr = Memory.readPointer(block.add(Process.pointerSize * 2));
+                    var types = action.handler().types;
+                    var addr = get_function_address(funcaddr);
+                    console.log(space + '\taction= ' + title + ' ' + types + ' ' + addr);
+                }
+                
+            }
+        }
         var subviews = view.subviews();
-		if (subviews != null) {
+		if (subviews != null && iter) {
 			var subviewcount = subviews.count();
 			for (var i = 0; i < subviewcount; i++) {
 				var subview = subviews.objectAtIndex_(i);
@@ -407,27 +446,13 @@ function tranverse_view() {
     find_subviews_internal(mainwin, 0);
 }
 
-function geterr() {
-	var errno = Memory.readU32(Module.findExportByName(null, "errno"));
-	var strerror = new NativeFunction(Module.findExportByName(null, "strerror"), "pointer", ["int"]);
-	console.log(Memory.readUtf8String(strerror(errno)));
-}
-
-function mem2file(path, addr, len) {
-	addr = ptr(addr);
-	var open = new NativeFunction(Module.findExportByName(null, "open"), "int", ["pointer", "int"]);
-	var close = new NativeFunction(Module.findExportByName(null, "close"), "void", ["int"]);
-	var write = new NativeFunction(Module.findExportByName(null, "write"), "int", ["int", "pointer", "int"]); 
-	O_WRONLY = 1;
-	O_CREAT = 0x200;
-	var fd = open(str(path), O_WRONLY | O_CREAT);
-	if (fd == -1) {
-		console.log("open failed");
-		return;
-	}
-	if (write(fd, addr, len) == -1) {
-		console.log("write failed");
-	}
-	close(fd);
-	console.log("write " + path + " success");
+function func(uictl) {
+    var octl = ObjC.Object(ptr(uictl));
+    var UIColor = ObjC.classes.UIColor;
+    ObjC.schedule(ObjC.mainQueue, function() {
+        octl.setBackgroundColor_(UIColor.redColor());
+        var UIWebView = ObjC.classes.UIWebView.alloc().init();
+        useragent = UIWebView.stringByEvaluatingJavaScriptFromString_(nsstr("navigator.userAgent"));
+        waitforstart = 0;
+    })
 }
