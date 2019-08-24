@@ -407,12 +407,12 @@ function tranverse_view() {
         }
         var msg = space + ctrlname + " " + view.handle;
         if (text != '') {
-            msg += " => " + text;
+            msg += "  => " + text;
         }
         if (responder != '') {
-            msg += " selectors= " + responder;
+            msg += "  selectors= " + responder;
         }
-        console.log(msg);
+        console.log(tounicode(msg));
         if (view.respondsToSelector_(ObjC.selector('actions'))) {
             // UIAlertView
             iter = false;
@@ -420,18 +420,42 @@ function tranverse_view() {
             var actioncount = actions.count();
             for (var j = 0; j < actioncount; j++) {
                 var action = actions.objectAtIndex_(j);
-                var title = action.title().toString();
+                var title = action.title().UTF8String();
                 if (action.handler() == null) {
-                    console.log(space + '\taction= ' + title);
+                    console.log(tounicode(space + '  action= ' + title));
                 } else {
                     var block = action.handler().handle;
                     var funcaddr = Memory.readPointer(block.add(Process.pointerSize * 2));
                     var types = action.handler().types;
                     var addr = get_function_address(funcaddr);
-                    console.log(space + '\taction= ' + title + ' ' + types + ' ' + addr);
+                    console.log(tounicode(space + '  action= ' + title + ' ' + types + ' ' + addr));
                 }
                 
             }
+        }
+        if (view.respondsToSelector_(ObjC.selector('gestureRecognizers'))) {
+            var gestures = view.gestureRecognizers();
+            if (gestures != null) {
+                var gesturecount = gestures.count();
+                for (var k = 0; k < gesturecount; k++) {
+                    var gesture = gestures.objectAtIndex_(k);
+                    var targets = ObjC.Object(gesture.handle.add(16).readPointer());
+                    if (targets.handle.isNull()) {
+                        continue;
+                    }
+                    var targetcount = targets.count();
+                    for (var l = 0; l < targetcount; l++) {
+                        var target = targets.objectAtIndex_(l);
+                        var addr = get_function_address(target.action());
+                        console.log(space + 'action', addr);
+                    }
+                }
+            }
+            
+            /*for (var j = 0; j < gesturecount; j++) {
+                var gesture = gestures.objectAtIndex_(j);
+
+            }*/
         }
         var subviews = view.subviews();
 		if (subviews != null && iter) {
@@ -446,13 +470,16 @@ function tranverse_view() {
     find_subviews_internal(mainwin, 0);
 }
 
-function func(uictl) {
-    var octl = ObjC.Object(ptr(uictl));
-    var UIColor = ObjC.classes.UIColor;
-    ObjC.schedule(ObjC.mainQueue, function() {
-        octl.setBackgroundColor_(UIColor.redColor());
-        var UIWebView = ObjC.classes.UIWebView.alloc().init();
-        useragent = UIWebView.stringByEvaluatingJavaScriptFromString_(nsstr("navigator.userAgent"));
-        waitforstart = 0;
-    })
+function trace_view() {
+    var UIApplication = ObjC.classes.UIApplication;
+    Interceptor.attach(UIApplication["- sendAction:to:from:forEvent:"].implementation, {
+        onEnter:function(args) {
+            var action = Memory.readUtf8String(args[2]);
+            var toobj = ObjC.Object(args[3]);
+            var fromobj = ObjC.Object(args[4]);
+            var event = ObjC.Object(args[5]);
+            console.log('SendAction:' + action + ' to:' + toobj.toString() + 
+          ' from:' + fromobj.toString() + ' forEvent:' + event.toString() + ']');
+        }
+    });
 }
