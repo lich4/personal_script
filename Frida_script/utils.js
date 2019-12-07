@@ -1,6 +1,27 @@
 var NSData = ObjC.classes.NSData;
 var NSString = ObjC.classes.NSString;
 
+function unicode2str(str) {
+    var ret = "";
+    var ustr = "";
+ 
+    for (var i = 0; i < str.length; i++) {
+        var code = str.charCodeAt(i);
+        var code16 = code.toString(16);
+        if (code < 0xf) {
+            ustr = "\\u" + "000" + code16;
+        } else if(code < 0xff){
+            ustr = "\\u" + "00" + code16;
+        } else if(code < 0xfff){
+            ustr = "\\u" + "0" + code16;
+        } else {
+            ustr = "\\u" + code16;
+        }  
+        ret += ustr;
+    }
+    return ret;
+}
+
 /* JavaScript String -> NSString */
 function str(s) {
     return Memory.allocUtf8String(s);
