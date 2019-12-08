@@ -401,8 +401,8 @@ function tranverse_view() {
         }
         var text = '';
         var ctrlname = view.class().toString();
-        if (view.isKindOfClass_(ObjC.classes.UILabel)) {
-            text = view.text();
+        if (view.respondsToSelector_(ObjC.selector('text'))) {
+            text = view.text()==null?"":view.text().toString();
         }
         var responder = '';
         var iter = true;
@@ -427,13 +427,13 @@ function tranverse_view() {
 			}
         }
         var msg = space + ctrlname + " " + view.handle;
-        if (text != '') {
-            msg += "  => " + text;
+        if (text.length > 0) {
+            msg += "  => " + unicode2str(text);
         }
         if (responder != '') {
             msg += "  selectors= " + responder;
         }
-        console.log(tounicode(msg));
+        console.log((msg));
         if (view.respondsToSelector_(ObjC.selector('actions'))) {
             // UIAlertView
             iter = false;
@@ -443,15 +443,14 @@ function tranverse_view() {
                 var action = actions.objectAtIndex_(j);
                 var title = action.title().UTF8String();
                 if (action.handler() == null) {
-                    console.log(tounicode(space + '  action= ' + title));
+                    console.log((space + '  action= ' + unicode2str(title)));
                 } else {
                     var block = action.handler().handle;
                     var funcaddr = Memory.readPointer(block.add(Process.pointerSize * 2));
                     var types = action.handler().types;
                     var addr = get_function_address(funcaddr);
-                    console.log(tounicode(space + '  action= ' + title + ' ' + types + ' ' + addr));
+                    console.log((space + '  action= ' + unicode2str(title) + ' ' + types + ' ' + addr));
                 }
-                
             }
         }
         if (view.respondsToSelector_(ObjC.selector('gestureRecognizers'))) {
