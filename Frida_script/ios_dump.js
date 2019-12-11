@@ -7,8 +7,8 @@ var SEEK_SET = 0;
 var SEEK_CUR = 1;
 var SEEK_END = 2;
 
-NSString = ObjC.classes.NSString;
-NSFileManager = ObjC.classes.NSFileManager;
+var NSString = ObjC.classes.NSString;
+var NSFileManager = ObjC.classes.NSFileManager;
 
 function allocStr(str) {
     return Memory.allocUtf8String(str);
@@ -157,12 +157,12 @@ function dumpMemory(addr, length) {
     }));
 }
 
-NSSearchPathForDirectoriesInDomains = getExportFunction("f", "NSSearchPathForDirectoriesInDomains", "pointer", ["int", "int", "int"]);
-wrapper_open = getExportFunction("f", "open", "int", ["pointer", "int", "int"]);
-read = getExportFunction("f", "read", "int", ["int", "pointer", "int"]);
-write = getExportFunction("f", "write", "int", ["int", "pointer", "int"]);
-lseek = getExportFunction("f", "lseek", "int64", ["int", "int64", "int"]);
-close = getExportFunction("f", "close", "int", ["int"]);
+var NSSearchPathForDirectoriesInDomains = getExportFunction("f", "NSSearchPathForDirectoriesInDomains", "pointer", ["int", "int", "int"]);
+var wrapper_open = getExportFunction("f", "open", "int", ["pointer", "int", "int"]);
+var read = getExportFunction("f", "read", "int", ["int", "pointer", "int"]);
+var write = getExportFunction("f", "write", "int", ["int", "pointer", "int"]);
+var lseek = getExportFunction("f", "lseek", "int64", ["int", "int64", "int"]);
+var close = getExportFunction("f", "close", "int", ["int"]);
 
 function getCacheDir(index) {
 	var NSUserDomainMask = 1;
