@@ -382,7 +382,9 @@ function get_function_address(address) {
     address = ptr(address);
     var symbol = getaddressmodule(address);
     var sympath = symbol['fname'];
-    var symname = sympath.split('/')[sympath.split('/').length - 1];
+    var symname = "";
+    if (sympath != null)
+        symname = sympath.split('/')[sympath.split('/').length - 1];
     return symname + '!' + address.sub(symbol['fbase']);
 }
 
