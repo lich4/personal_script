@@ -144,6 +144,24 @@ function getkeychain() {
     )
 }
 
+function cleankeychain() {
+    var NSMutableDictionary=ObjC.classes.NSMutableDictionary;
+    var kSecClassGenericPassword = ObjC.Object(getExportFunction("d", "kSecClassGenericPassword"));
+    var kSecClassInternetPassword = ObjC.Object(getExportFunction("d", "kSecClassInternetPassword"));
+    var kSecClassCertificate = ObjC.Object(getExportFunction("d", "kSecClassCertificate"));
+    var kSecClassKey = ObjC.Object(getExportFunction("d", "kSecClassKey"));
+    var kSecClassIdentity = ObjC.Object(getExportFunction("d", "kSecClassIdentity"));
+    var kSecClass = ObjC.Object(getExportFunction("d","kSecClass"));
+    var SecItemDelete = getExportFunction("f", "SecItemDelete", "int", ["pointer"]);
+    var query = NSMutableDictionary.alloc().init();
+    [kSecClassGenericPassword, kSecClassInternetPassword, kSecClassCertificate, kSecClassKey, 
+        kSecClassIdentity].forEach(function(secItemClass) {
+            query.setObject_forKey_(secItemClass, kSecClass);
+            SecItemDelete(query.handle);
+        }
+    )
+}
+
 /* Base64 Encode */
 function base64(input) {
     var _keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
