@@ -86,7 +86,48 @@ class mymd5:
     def hexdigest(self):
         return self.data.hex()
 
+class myhmac:
+    '''
+        key->bytes
+        msg->bytes
+    '''
+    def __init__(self, key, msg, digest='md5'):
+        self.digest = digest
+        self.key = key
+        self.msg = msg
+        self.data = None
+
+        if self.digest == 'md5':
+            self.blocksize = 64
+            if len(self.key) > self.blocksize:
+                self.key = mymd5(self.key).digest()
+            if len(self.key) < self.blocksize:
+                self.key += b'\0' * (self.blocksize - len(self.key))
+            self.ipad = b'\x36' * self.blocksize
+            self.opad = b'\x5c' * self.blocksize
+            self.calcmd5()
+
+    def calcmd5(self):
+        self.ipad = b''.join([chr(self.ipad[i] ^ self.key[i]).encode() for i in range(self.blocksize)])
+        self.opad = b''.join([chr(self.opad[i] ^ self.key[i]).encode() for i in range(self.blocksize)])
+        self.data = mymd5(self.opad + mymd5(self.ipad + self.msg).digest()).digest()
+
+    def digest(self):
+        return self.data
+
+    def hexdigest(self):
+        return self.data.hex()
+
+def randstr(rl=None):
+    if rl is None:
+        rl = randint(1, 1000)
+    return ''.join([chr(randint(65, 90)) for i in range(rl)])    
+   
 def test():
-  md5_1 = mymd5(rs.encode()).hexdigest()
-  print(md5_1)
+  md5_1 = mymd5('msg'.encode())
+  print(md5_1.hexdigest())
   # 自定义md5执行速度:1ms/个   hashlib.md5执行速度:3.6us/个
+  hmac_1 = myhmac('key'.encode(),'msg'.encode())
+  print(hmac_1.hexdigest())
+
+
