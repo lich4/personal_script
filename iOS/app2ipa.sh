@@ -7,12 +7,20 @@ if [[ x$1 == x ]]; then
     exit 0
 fi
 
-if [[ ! $1 =~ .*.app$ ]]; then
-    echo bundlepath must be .../xxxxx.app
-    exit 0
+if [ ! -f /usr/bin/zip ]; then
+    apt install zip
 fi
 
-apppath=$1
+apppath=$(echo /private/var/containers/Bundle/Application/*/$1.app)
+
+if [ ! -d $apppath ]; then
+    apppath=$(echo /private/var/mobile/Containers/Bundle/Application/*/$1.app)
+    if [ ! -d $apppath ]; then
+        echo app not found
+        exit
+    fi
+fi
+
 spliter=(${apppath//// })
 appbase=${spliter[${#spliter[*]}-1]}
 appname=${appbase//.app/}
@@ -24,9 +32,17 @@ mkdir -p /tmp/$appname/Payload
 cp -rfp $apppath /tmp/$appname/Payload/
 if [ -f $apppath/../iTunesArtwork ]; then
     cp -fp $apppath/../iTunesArtwork /tmp/$appname/iTunesArtwork
-elif [ -f $apppath/Icon.png ]; then
+fi
+if [ -f $apppath/../iTunesMetadata.plist ]; then
+    cp -fp $apppath/../iTunesMetadata.plist /tmp/$appname/iTunesMetadata.plist
+fi
+if [ -f $apppath/../BundleMetadata.plist ]; then
+    cp -fp $apppath/../BundleMetadata.plist /tmp/$appname/BundleMetadata.plist
+fi
+if [ -f $apppath/Icon.png ]; then
     cp -fp $apppath/Icon.png /tmp/$appname/iTunesArtwork
-elif [ -f $apppath/Default.png ]; then
+fi
+if [ -f $apppath/Default.png ]; then
     cp -fp $apppath/Default.png /tmp/$appname/iTunesArtwork
 fi
 olddir=$PWD
