@@ -78,7 +78,12 @@ function getExportFunction(type, name, ret, args) {
 
 function modload(modpath) {
     var dlopen = getExportFunction("f", "dlopen", "pointer", ["pointer", "int"]);
-    dlopen(str(modpath), 1);
+    var dlerror = getExportFunction("f", "dlerror", "pointer", []);
+    var ret = dlopen(str(modpath), 1);
+    if (ret.isNull()) {
+        var err = dlerror();
+        console.log(err.readUtf8String());
+    }
 }
 
 function getscreensize() {
