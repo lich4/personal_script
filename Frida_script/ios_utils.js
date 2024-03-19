@@ -79,11 +79,14 @@ function getExportFunction(type, name, ret, args) {
 function modload(modpath) {
     var dlopen = getExportFunction("f", "dlopen", "pointer", ["pointer", "int"]);
     var dlerror = getExportFunction("f", "dlerror", "pointer", []);
-    var ret = dlopen(str(modpath), 1);
-    if (ret.isNull()) {
-        var err = dlerror();
-        console.log(err.readUtf8String());
+    var p = dlopen(str(modpath), 1);
+    if (p.isNull()) {
+        var e = dlerror();
+        if (!e.isNull()) {
+            console.log(e.readUtf8String());
+        }
     }
+    return p;
 }
 
 function getscreensize() {
@@ -190,6 +193,13 @@ function base64(input) {
         output = output + _keyStr.charAt(enc1) + _keyStr.charAt(enc2) + _keyStr.charAt(enc3) + _keyStr.charAt(enc4);
     }
     return output;
+}
+
+function base64_buf(addr, len) {
+    var NSData = ObjC.classes["NSData"];
+    var data = NSData.dataWithBytes_length_(addr, len);
+    var s = data.base64EncodedStringWithOptions_(0);
+    return s.toString()
 }
 
 /* Get KeyBlockSize from SecKeyRef */
@@ -511,11 +521,6 @@ function tranverse_view() {
                     }
                 }
             }
-            
-            /*for (var j = 0; j < gesturecount; j++) {
-                var gesture = gestures.objectAtIndex_(j);
-
-            }*/
         }
         var subviews = view.subviews();
 		if (subviews != null && iter) {
@@ -796,6 +801,13 @@ function dumpMemory(base, size, path) {
     close(fmodule);
     console.log(fmodule)
     console.log('dump to ' + path);
+}
+
+function dumpAllModule() {
+    var modules = getAllAppModules();
+    for (var i = 0; i < modules.length; i++) {
+        dumpModule(modules[i].path);
+    }
 }
 
 function dumpModule(name, path) {
