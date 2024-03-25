@@ -6,9 +6,22 @@ ptsize = 8 if is64 else 4
 get_pt = get_qword if is64 else get_wide_dword
 b2s = lambda d: d.decode() if d is not None and type(d) == bytes and str != bytes else d
 
+def get_all_ref(ea, typ, way): # type=cref/fcref/dref way=from/to
+    import ida_xref
+    get_first = "get_first_" + typ + "_" + way
+    get_next = "get_next_" + typ + "_" + way
+    f_get_first = getattr(ida_xref, get_first)
+    f_get_next = getattr(ida_xref, get_next)
+    addr = f_get_first(ea)
+    result = list()
+    while addr != BADADDR:
+        result.append(addr)
+        addr = f_get_next(ea, addr)
+    return result
+
 def addxref(sel, f_ea):
-    add_cref(sel, f_ea, XREF_USER | fl_F)
-    add_cref(f_ea, sel, XREF_USER | fl_F)
+    add_cref(sel, f_ea, 0)
+    add_cref(f_ea, sel, 0)
 
 def addobjcref():
     sel_map = {}
@@ -84,7 +97,7 @@ def addobjcref():
         sel_ea = get_pt(selref_ea)
         sel_name = b2s(get_strlit_contents(sel_ea))
         if sel_name not in forbit_meth:
-            sel_map[sel_name] = sel_ea
+            sel_map[sel_name] = selref_ea
     # get objc func table
     for addr in idautils.Functions():
         func_name = b2s(get_name(addr))
@@ -96,10 +109,10 @@ def addobjcref():
                     imp_map[sel_name] = []
                 imp_map[sel_name].append(addr)
     # make xref
-    for (sel_name, sel_ea) in sel_map.items():
+    for (sel_name, selref_ea) in sel_map.items():
         if sel_name in imp_map:
             for f_addr in imp_map[sel_name]:
-                addxref(sel_ea, f_addr)
+                addxref(selref_ea, f_addr)
             print("added xref for " + sel_name)
 
 if __name__ == "__main__":
