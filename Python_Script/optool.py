@@ -1,4 +1,4 @@
-#!python
+#!/Users/apple/opt/miniconda3/envs/py39/bin/python
 
 import argparse
 import os
@@ -161,7 +161,7 @@ def del_dylib(args, obj=None):
                     "index": index,
                     "name": cmd.name,
                 })
-        for item in to_del_lst:
+        for item in to_del_lst[::-1]: # Must delete in reverse order
             obj.remove_command(item["index"])
             print("Successfully remove [{}/{}] {}".format(item["index"], index_max, item["name"]))
             need_update = True
@@ -216,7 +216,41 @@ def add_rpath(args, obj=None):
         f.write(path)
 
 def del_rpath(args, obj=None):
-    pass
+    need_update = False
+    if obj:
+        index_max = len(obj.commands)
+        to_del_lst = list()
+        for index, cmd in enumerate(obj.commands):
+            if cmd.command == LoadCommand.TYPE.RPATH:
+                if cmd.path != args.runpath:
+                    continue
+                to_del_lst.append({
+                    "index": index,
+                    "path": cmd.path,
+                })
+        for item in to_del_lst[::-1]:
+            obj.remove_command(item["index"]) # Must delete in reverse order
+            print("Successfully remove [{}/{}] {}".format(item["index"], index_max, item["path"]))
+            need_update = True
+        return need_update
+    target = args.target
+    if not os.path.exists(target):
+        print("target file not exist")
+        return
+    name = os.path.basename(target)
+    f = MachOFile(target)
+    if not f.valid:
+        print("macho invalid")
+        return
+    for obj in f.obj:
+        header = obj.header
+        print("{} (architecture {})".format(name, get_arch(header.cpu_type, header.cpu_subtype)))
+        if del_rpath(args, obj):
+            need_update = True
+    if need_update:
+        path = args.output if args.output else args.target
+        print("Successfully write to " + path)
+        f.write(path)
 
 def list_dylib(args, obj=None):
     if obj:
@@ -322,7 +356,6 @@ if __name__ == "__main__":
         HELP += "    show app dependent dylibs in target binary                                 \n"
         HELP += "\nOPTIONS:                                                                     \n"
         HELP += "    -t <target>    Input macho file                                            \n"
-        HELP += "    -p <loadpath>  Dylib path to add_dylib or del_dylib                        \n"
         HELP += "    -c <command>   Type of load command                                        \n"
         HELP += "        id:        LC_ID_DYLIB                                                 \n"
         HELP += "        lazy:      LC_LAZY_LOAD_DYLIB                                          \n"
