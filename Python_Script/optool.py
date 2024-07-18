@@ -1,4 +1,4 @@
-#!/Users/apple/opt/miniconda3/bin/python
+#!python3.9
 
 import argparse
 import lief
@@ -37,7 +37,8 @@ dylib_ctor_map = {
     "upwardoad":lief.MachO.DylibCommand.load_upward_dylib,
 }
 
-format_version = lambda v: ".".join([str(i) for i in v])
+version2str = lambda version: ".".join([str(i) for i in version])
+version2int = lambda version: (version[2]) | (version[1] << 8) | (version[0] << 16)
 
 def get_arch(cpu_type, cpu_subtype):
     cpu_keymap = {
@@ -68,7 +69,7 @@ class MachOFile:
     def write(self, path=""):
         if not path:
             path = self.path
-        lief.MachO.Builder.write(self.obj, path)
+        self.obj.write(path)
         if self.fatnum == 1: # lief will generate nonfat file, so fix it
             os.system("lipo -create -output {} {}".format(path, path))
         return True
@@ -79,7 +80,10 @@ def inst_dylib(args, obj=None):
         name = args.loadpath
         ctor = dylib_ctor_map[args.command]
         command = ctor(name)
-        obj.add(command)
+        if args.index != -1:
+            obj.add(command, args.index)
+        else:
+            obj.add(command)
         print("Successfully insert {}".format(name))
         return True
     target = args.target
@@ -105,6 +109,8 @@ def replace_dylib(args, obj=None):
     need_update = False
     if obj:
         index_max = len(obj.commands)
+        to_del_index = None
+        new_cmd = None
         for index, cmd in enumerate(obj.commands):
             if cmd.command in dylib_keymap:
                 dylib_type = dylib_keymap[cmd.command]
@@ -112,10 +118,15 @@ def replace_dylib(args, obj=None):
                     continue
                 if cmd.name != args.loadpath:
                     continue
-                old_name = cmd.name
-                cmd.name = args.loadpath
-                print("Successfully update [{}/{}] {} -> {}".format(index, index_max, old_name, cmd.name))
+                to_del_index = index
+                ctor = dylib_ctor_map[dylib_type]
+                new_cmd = ctor(args.replace, cmd.timestamp, version2int(cmd.current_version), version2int(cmd.compatibility_version))
                 need_update = True
+                break
+        if to_del_index:
+            obj.remove_command(to_del_index)
+            obj.add(new_cmd, to_del_index)
+            print("Successfully update [{}/{}] {} -> {}".format(index, index_max, args.loadpath, args.replace))
         return need_update
     target = args.target
     if not os.path.exists(target):
@@ -194,8 +205,8 @@ def list_dylib(args, obj=None):
                 continue
             print("  command dylib {}:".format(k))
             for item in dylib_dict[k]:
-                cov = format_version(item["ver"])
-                cuv = format_version(item["compatver"])
+                cov = version2str(item["ver"])
+                cuv = version2str(item["compatver"])
                 print("    [{}/{}] {} (compatibility version {}, current version {})".format(item["index"], index_max, item["name"], cov, cuv))
         return
     target = args.target
@@ -220,11 +231,10 @@ if __name__ == "__main__":
     replace_parser = subparsers.add_parser("replace", add_help=False, help="Replace any LC_LOAD commands which point to a given loadpath from the target binary")
     uninst_parser = subparsers.add_parser("uninstall", add_help=False, help="Removes any LC_LOAD commands which point to a given loadpath from the target binary")
     list_parser = subparsers.add_parser("list", add_help=False, help="Show app dependency dylibs in target binary")
-    resign_parser = subparsers.add_parser("resign", add_help=False, help="Resign target binary")
     inst_parser.add_argument("-c", type=str, dest="command", required=True)
     inst_parser.add_argument("-p", type=str, dest="loadpath", required=True)
+    inst_parser.add_argument("-i", type=int, dest="index", default=-1)
     inst_parser.add_argument("-t", type=str, dest="target", required=True)
-    inst_parser.add_argument("-s", type=str, dest="sign")
     inst_parser.add_argument("-o", type=str, dest="output")
     inst_parser.set_defaults(func=inst_dylib)
     replace_parser.add_argument("-c", type=str, dest="command")
@@ -246,7 +256,7 @@ if __name__ == "__main__":
         args.func(args)
     else:
         HELP = parser.format_usage()
-        HELP += "install -c <command> -p <loadpath> -t <target> [-o <output>]                   \n"
+        HELP += "install -c <command> -p <loadpath> [-i <index>] -t <target> [-o <output>]      \n"
         HELP += "    Insert LC_LOAD command into target binary with specific loadpath           \n"
         HELP += "replace -c <command> -p <loadpath> [-r <replace>] -t <target> [-o <output>]    \n"
         HELP += "    Replace LC_LOAD command from target binary with specific loadpath          \n"
@@ -265,14 +275,15 @@ if __name__ == "__main__":
         HELP += "        upward:    LC_LOAD_UPWARD_DYLIB                                        \n"
         HELP += "        weak:      LC_LOAD_WEAK_DYLIB                                          \n"
         HELP += "    -o <path>      Output macho file, default to Input file                    \n"
+        HELP += "    -i <index>     Insert position to install                                  \n"
         HELP += "    -r <path>      Old path to replace for install command                     \n"
         print(HELP)
 
 '''
 test:
 python3 optool.py list -t /tmp/ls
-python3 optool.py uninstall -p /usr/lib/libutil.dylib -t /tmp/ls -o /tmp/ls_new
-python3 optool.py replace -p /usr/lib/libutil.dylib -r /usr/lib/test1.dylib -t /tmp/ls -o /tmp/ls_new
-python3 optool.py install -c weak -p /usr/lib/libutil.dylib -t /tmp/ls -o /tmp/ls_new
+python3 optool.py uninstall -p /usr/lib/libutil.dylib -t /tmp/ls
+python3 optool.py replace -p /usr/lib/libutil.dylib -r /usr/lib/test1.dylib -t /tmp/ls
+python3 optool.py install -c weak -p /usr/lib/libutil.dylib -t /tmp/ls
 '''
 
