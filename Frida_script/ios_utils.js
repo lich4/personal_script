@@ -89,6 +89,14 @@ function modload(modpath) {
     return p;
 }
 
+function list_app_info() {
+    var NSHomeDirectory = getExportFunction("f", "NSHomeDirectory", "pointer", []);
+    var NSBundle = ObjC.classes["NSBundle"];
+    console.log("bundleID: " + NSBundle.mainBundle().bundleIdentifier());
+    console.log("bundlePath: " + NSBundle.mainBundle().bundlePath());
+    console.log("containerPath: " + ObjC.Object(NSHomeDirectory()));
+}
+
 function check_access(path) {
     var access = getExportFunction("f", "access", "int", ["pointer", "int"]);
     var path_s = Memory.allocUtf8String(path);
