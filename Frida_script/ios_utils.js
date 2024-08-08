@@ -89,6 +89,24 @@ function modload(modpath) {
     return p;
 }
 
+function check_access(path) {
+    var access = getExportFunction("f", "access", "int", ["pointer", "int"]);
+    var path_s = Memory.allocUtf8String(path);
+    var r_f = (access(path_s, 0) == 0) ? "yes" : "no";
+    var r_x = (access(path_s, 1) == 0) ? "yes" : "no";
+    var r_w = (access(path_s, 2) == 0) ? "yes" : "no";
+    var r_r = (access(path_s, 4) == 0) ? "yes" : "no";
+    console.log("exist:" + r_f + " exec:" + r_x + " write:" + r_w + " read:" + r_r);
+}
+
+function list_dir(path) {
+    var NSFileManager = ObjC.classes["NSFileManager"];
+    var man = NSFileManager.defaultManager();
+    var error = Memory.alloc(8);
+    var ret = man.contentsOfDirectoryAtPath_error_(path, error);
+    console.log(ret)
+}
+
 function getscreensize() {
     var UIScreen = ObjC.classes.UIScreen;
     return UIScreen.mainScreen().bounds()[1];
