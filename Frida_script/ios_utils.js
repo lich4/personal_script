@@ -97,6 +97,17 @@ function list_app_info() {
     console.log("containerPath: " + ObjC.Object(NSHomeDirectory()));
 }
 
+function list_env() {
+    var environ = Module.findExportByName(null, "environ").readPointer();
+    for (var i = 0; ; i++) {
+        var p = environ.add(i * 8).readPointer();
+        if (p.isNull()) {
+            break;
+        }
+        console.log(p.readUtf8String());
+    }
+}
+
 function check_access(path) {
     var access = getExportFunction("f", "access", "int", ["pointer", "int"]);
     var path_s = Memory.allocUtf8String(path);
