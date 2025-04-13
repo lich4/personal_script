@@ -1,5 +1,3 @@
-var NSData = ObjC.classes.NSData;
-var NSString = ObjC.classes.NSString;
 
 function unicode2str(str) {
     var ret = "";
@@ -25,6 +23,14 @@ function unicode2str(str) {
 /* JavaScript String -> NSString */
 function str(s) {
     return Memory.allocUtf8String(s);
+}
+
+function init_objc() {
+    global.NSString=ObjC.classes["NSString"];
+    global.NSDictionary=ObjC.classes["NSDictionary"];
+    global.NSMutableDictionary=ObjC.classes["NSMutableDictionary"];
+    global.NSArray=ObjC.classes["NSArray"];
+    global.NSMuableArray=ObjC.classes["NSMutableArray"];
 }
 
 function nsstr(str) {
@@ -371,13 +377,13 @@ function getclassmethod(classname, base) {
         var name = Memory.readUtf8String(method_getName(method));
         var imp = method_getImplementation(method);
         var imp_mod = Process.findRangeByAddress(imp);
-        if (!imp_mod.file || !imp_mod.file.path) {
-            console.log("err:" + classname + " " + name);
-            return;
+        if (imp_mod && imp_mod.file && imp_mod.file.path) {
+            var mod = getfilename(imp_mod.file.path);
+            result.push({"name": "+[" + classname + " " + name + "]", "imp":imp.sub(base)});
+            //console.log("+[" + classname + " " + name + "] -> " + imp);
+        } else {
+            result.push({"name": "+[" + classname + " " + name + "]", "imp":"unknown"});
         }
-        var mod = getfilename(imp_mod.file.path);
-		result.push({"name": "+[" + classname + " " + name + "]", "imp":imp.sub(base)});
-        //console.log("+[" + classname + " " + name + "] -> " + imp);
     }
 	return result;
 }
@@ -423,14 +429,14 @@ function forcetrustcert() {
 
 // 随机字符串
 function randomString(len) {
-　　len = len || 32;
-　　var $chars = 'ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz2345678';
-　　var maxPos = $chars.length;
-　　var pwd = '';
-　　for (i = 0; i < len; i++) {
-　　　　pwd += $chars.charAt(Math.floor(Math.random() * maxPos));
-　　}
-　　return pwd;
+    len = len || 32;
+    var $chars = 'ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz2345678';
+    var maxPos = $chars.length;
+    var pwd = '';
+    for (i = 0; i < len; i++) {
+        pwd += $chars.charAt(Math.floor(Math.random() * maxPos));
+    }
+    return pwd;
 }
 
 // 生成二进制NSData
@@ -586,6 +592,11 @@ function trace_view() {
     });
 }
 
+function get_exp_nsstr(s) {
+    var p = Module.findExportByName(null, s);
+    console.log(ObjC.Object(p.readPointer()))
+}
+
 var O_RDONLY = 0;
 var O_WRONLY = 1;
 var O_RDWR = 2;
@@ -595,15 +606,12 @@ var SEEK_SET = 0;
 var SEEK_CUR = 1;
 var SEEK_END = 2;
 
-var NSString = ObjC.classes.NSString;
-var NSFileManager = ObjC.classes.NSFileManager;
-
 function allocStr(str) {
     return Memory.allocUtf8String(str);
 }
 
 function getNSString(str) {
-    return NSString.stringWithUTF8String_(Memory.allocUtf8String(str));
+    return ObjC.classes.NSString.stringWithUTF8String_(Memory.allocUtf8String(str));
 }
 
 function getStr(addr) {
